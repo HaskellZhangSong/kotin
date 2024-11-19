@@ -1,0 +1,9 @@
+public final class CodeFragment {
+    // source: 'fragment.kt'
+    public method <init>(): void
+    public final static method run(p0: Foo): void
+}
+
+public final class ContextKt
+
+public final class Foo
