@@ -28,6 +28,9 @@ class GccConfigurablesImpl(target: KonanTarget, properties: Properties, dependen
 class AndroidConfigurablesImpl(target: KonanTarget, properties: Properties, dependenciesRoot: String?, progressCallback: ProgressCallback) : AndroidConfigurables,
     KonanPropertiesLoader(target, properties, dependenciesRoot, progressCallback = progressCallback)
 
+class OhosConfigurablesImpl(target: KonanTarget, properties: Properties, dependenciesRoot: String?, progressCallback: ProgressCallback) : OhosConfigurables,
+    KonanPropertiesLoader(target, properties, dependenciesRoot, progressCallback = progressCallback)
+
 fun loadConfigurables(
     target: KonanTarget,
     properties: Properties,
@@ -37,6 +40,8 @@ fun loadConfigurables(
     },
 ): Configurables = when (target.family) {
     Family.LINUX -> GccConfigurablesImpl(target, properties, dependenciesRoot, progressCallback)
+
+    Family.OHOS -> OhosConfigurablesImpl(target, properties, dependenciesRoot, progressCallback)
 
     Family.TVOS, Family.WATCHOS, Family.IOS, Family.OSX -> AppleConfigurablesImpl(target, properties, dependenciesRoot, progressCallback)
 

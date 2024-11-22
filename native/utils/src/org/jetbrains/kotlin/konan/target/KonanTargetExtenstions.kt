@@ -18,6 +18,7 @@ fun KonanTarget.binaryFormat() = when (family) {
     Family.OSX -> BinaryFormat.MACH_O
     Family.ANDROID -> BinaryFormat.ELF
     Family.LINUX -> BinaryFormat.ELF
+    Family.OHOS -> BinaryFormat.ELF
     Family.MINGW -> BinaryFormat.PE_COFF
 }
 
@@ -35,6 +36,7 @@ fun KonanTarget.supportsMimallocAllocator(): Boolean =
         is KonanTarget.MACOS_X64 -> true
         is KonanTarget.MACOS_ARM64 -> true
         is KonanTarget.LINUX_ARM64 -> true
+        is KonanTarget.OHOS_ARM64 -> true
         is KonanTarget.LINUX_ARM32_HFP -> true
         is KonanTarget.ANDROID_X64 -> true
         is KonanTarget.ANDROID_ARM64 -> true
