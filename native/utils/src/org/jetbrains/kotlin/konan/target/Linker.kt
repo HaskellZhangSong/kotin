@@ -179,6 +179,45 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
     }
 }
 
+class OhosLinker(targetProperties: OhosConfigurables)
+    : LinkerFlags(targetProperties), OhosConfigurables by targetProperties {
+
+    private val clangTarget = targetProperties.targetTriple.toString();
+    private val clang = "$absoluteTargetToolchain/bin/${clangTarget}-clang++"
+    private val ar = "$absoluteTargetToolchain/bin/llvm-ar"
+
+    override val useCompilerDriverAsLinker: Boolean get() = true
+
+    override fun filterStaticLibraries(binaries: List<String>) = binaries.filter { it.isUnixStaticLib }
+
+    override fun LinkerArguments.finalLinkCommands(): List<Command> {
+        require(sanitizer == null) {
+            "Sanitizers are unsupported"
+        }
+        if (kind == LinkerOutputKind.STATIC_LIBRARY)
+            return staticGnuArCommands(ar, executable, objectFiles, libraries)
+
+        val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY
+        return listOf(Command(clang).apply {
+            +"-o"
+            +executable
+            when (kind) {
+                LinkerOutputKind.EXECUTABLE -> +listOf("-fPIE", "-pie")
+                LinkerOutputKind.DYNAMIC_LIBRARY -> +listOf("-fPIC", "-shared")
+                LinkerOutputKind.STATIC_LIBRARY -> {}
+            }
+            +objectFiles
+            if (optimize) +linkerOptimizationFlags
+            if (!debug) +linkerNoDebugFlags
+            if (dynamic) +linkerDynamicFlags
+            if (dynamic) +"-Wl,-soname,${File(executable).name}"
+            +linkerKonanFlags
+            +libraries
+            +linkerArgs
+        })
+    }
+}
+
 class MacOSBasedLinker(targetProperties: AppleConfigurables)
     : LinkerFlags(targetProperties), AppleConfigurables by targetProperties {
 
@@ -591,6 +630,7 @@ fun linker(configurables: Configurables): LinkerFlags =
             is GccConfigurables -> GccBasedLinker(configurables)
             is AppleConfigurables -> MacOSBasedLinker(configurables)
             is AndroidConfigurables-> AndroidLinker(configurables)
+            is OhosConfigurables -> OhosLinker(configurables)
             is MingwConfigurables -> MingwLinker(configurables)
             is WasmConfigurables -> WasmLinker(configurables)
             is ZephyrConfigurables -> ZephyrLinker(configurables)
