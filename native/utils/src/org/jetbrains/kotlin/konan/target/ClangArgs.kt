@@ -27,7 +27,11 @@ sealed class ClangArgs(
 
     private val absoluteTargetToolchain = configurables.absoluteTargetToolchain
     private val absoluteTargetSysRoot = configurables.absoluteTargetSysRoot
-    private val absoluteLlvmHome = configurables.absoluteLlvmHome
+    private val absoluteLlvmHome: String
+        get() {
+            return if (configurables.target.family == Family.OHOS) configurables.absoluteTargetToolchain else configurables.absoluteLlvmHome
+        }
+
     private val target = configurables.target
     private val targetTriple = configurables.targetTriple
 
