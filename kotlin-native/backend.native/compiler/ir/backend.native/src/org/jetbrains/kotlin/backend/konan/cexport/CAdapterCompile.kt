@@ -16,6 +16,7 @@ fun produceCAdapterBitcode(clang: ClangArgs, cppFile: File, bitcodeFile: File) {
     val clangCommand = clang.clangCXX(
             "-std=c++17",
             cppFile.absoluteFile.normalize().path,
+            "-O3", "-Xclang", "-disable-llvm-optzns",
             "-emit-llvm", "-c",
             "-o", bitcodeFile.absoluteFile.normalize().path
     )
