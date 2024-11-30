@@ -1,0 +1,12 @@
+depends = posix
+package = platform.ohos.crypto
+headers = CryptoArchitectureKit/crypto_digest.h \
+          CryptoArchitectureKit/crypto_architecture_kit.h \
+          CryptoArchitectureKit/crypto_sym_key.h \
+          CryptoArchitectureKit/crypto_sym_cipher.h \
+          CryptoArchitectureKit/crypto_common.h \
+          CryptoArchitectureKit/crypto_asym_key.h \
+          CryptoArchitectureKit/crypto_signature.h
+
+compilerOpts = -D_ANSI_SOURCE -D_POSIX_C_SOURCE=200809 -D_BSD_SOURCE -D_XOPEN_SOURCE=700
+linkerOpts = -lohcrypto.z

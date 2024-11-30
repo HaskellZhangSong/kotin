@@ -1,0 +1,11 @@
+depends = ohos_napi
+package = platform.ohos.resource
+headers = resourcemanager/resmgr_common.h \
+          rawfile/raw_dir.h \
+          resourcemanager/ohresmgr.h \
+          rawfile/raw_file.h \
+          rawfile/raw_file_manager.h
+
+compilerOpts = -D_ANSI_SOURCE -D_POSIX_C_SOURCE=199309 -D_BSD_SOURCE -D_XOPEN_SOURCE=700
+linkerOpts = -lohresmgr
+

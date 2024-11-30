@@ -1,0 +1,8 @@
+depends = posix
+package = platform.ohos.vulkan
+headers = vulkan/vk_platform.h \
+    vulkan/vulkan_core.h \
+    vulkan/vulkan_ohos.h \
+    vulkan/vulkan.h
+compilerOpts = -D_ANSI_SOURCE -D_POSIX_C_SOURCE=199309 -D_BSD_SOURCE -D_XOPEN_SOURCE=700
+linkerOpts = -lvulkan

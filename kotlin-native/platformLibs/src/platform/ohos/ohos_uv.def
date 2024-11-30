@@ -1,0 +1,5 @@
+depends = posix
+package = platform.ohos.uv
+headers = uv.h
+compilerOpts = -D_ANSI_SOURCE -D_POSIX_C_SOURCE=199309 -D_BSD_SOURCE -D_XOPEN_SOURCE=700
+linkerOpts = -luv

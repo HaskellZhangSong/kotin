@@ -1,0 +1,5 @@
+depends = posix
+package = platform.ohos.napi
+headers = napi/native_api.h js_native_api.h js_native_api_types.h node_api_types.h node_api.h
+compilerOpts = -D_ANSI_SOURCE -D_POSIX_C_SOURCE=199309 -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -DNAPI_VERSION=8
+linkerOpts = -lace_napi.z
