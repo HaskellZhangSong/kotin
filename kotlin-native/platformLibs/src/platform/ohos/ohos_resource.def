@@ -1,5 +1,6 @@
 depends = ohos_napi
 package = platform.ohos.resource
+language = C++
 headers = resourcemanager/resmgr_common.h \
           rawfile/raw_dir.h \
           resourcemanager/ohresmgr.h \

@@ -1,5 +1,6 @@
 depends = posix
 package = platform.ohos.drawing
+language = C++
 headers = stdbool.h \
           stddef.h \
           native_vsync/native_vsync.h  \

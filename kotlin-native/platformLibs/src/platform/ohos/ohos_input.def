@@ -1,5 +1,6 @@
 depends = posix
 package = platform.ohos.input
+language = C++
 headers = multimodalinput/oh_key_code.h \
           multimodalinput/oh_input_manager.h \
           multimodalinput/oh_axis_type.h \

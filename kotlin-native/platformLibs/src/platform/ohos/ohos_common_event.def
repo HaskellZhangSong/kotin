@@ -1,5 +1,6 @@
 depends = posix
 package = platform.ohos.commonevent
+language = C++
 headers = BasicServicesKit/oh_commonevent.h \
           BasicServicesKit/oh_commonevent_support.h
 
