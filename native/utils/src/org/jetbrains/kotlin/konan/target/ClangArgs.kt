@@ -172,13 +172,18 @@ sealed class ClangArgs(
     val clangArgsForKonanSources =
             clangXXArgs + clangArgsSpecificForKonanSources
 
-    private val libclangSpecificArgs =
-            // libclang works not exactly the same way as the clang binary and
-            // (in particular) uses different default header search path.
-            // See e.g. http://lists.llvm.org/pipermail/cfe-dev/2013-November/033680.html
-            // We workaround the problem with -isystem flag below.
-            // TODO: Revise after update to LLVM 10.
-            listOf("-isystem", "$absoluteLlvmHome/lib/clang/${configurables.llvmVersion}/include")
+    private val libclangSpecificArgs = if (configurables.target.family == Family.OHOS) {
+        // Special case for parsing with the bundled clang.
+        // Note that the SDK clang would be used for most tasks.
+        (configurables as OhosConfigurables).libClangArgs
+    } else {
+        // libclang works not exactly the same way as the clang binary and
+        // (in particular) uses different default header search path.
+        // See e.g. http://lists.llvm.org/pipermail/cfe-dev/2013-November/033680.html
+        // We workaround the problem with -isystem flag below.
+        // TODO: Revise after update to LLVM 10.
+        listOf("-isystem", "$absoluteLlvmHome/lib/clang/${configurables.llvmVersion}/include")
+    }
 
     /**
      * libclang args for plain C and Objective-C.

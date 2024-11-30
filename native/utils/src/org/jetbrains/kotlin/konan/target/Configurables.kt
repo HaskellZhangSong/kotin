@@ -132,7 +132,9 @@ interface GccConfigurables : Configurables, ClangFlags {
 
 interface AndroidConfigurables : Configurables, ClangFlags
 
-interface OhosConfigurables : Configurables, ClangFlags
+interface OhosConfigurables : Configurables, ClangFlags {
+    val libClangArgs get() = targetList("libClangArgs")
+}
 
 interface WasmConfigurables : Configurables, ClangFlags, LldFlags
 
