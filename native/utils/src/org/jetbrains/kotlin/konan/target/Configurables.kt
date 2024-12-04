@@ -134,6 +134,7 @@ interface AndroidConfigurables : Configurables, ClangFlags
 
 interface OhosConfigurables : Configurables, ClangFlags {
     val libClangArgs get() = targetList("libClangArgs")
+    override val targetToolchain get() = targetString("targetToolchain")
 }
 
 interface WasmConfigurables : Configurables, ClangFlags, LldFlags
