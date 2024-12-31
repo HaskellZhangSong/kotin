@@ -30,6 +30,7 @@ class OutputFiles(val outputName: String, target: KonanTarget, val produce: Comp
      */
     val cAdapterHeader by lazy { File("${outputName}_api.h") }
     val cAdapterDef    by lazy { File("${outputName}.def") }
+    val thIdl          by lazy { File("${outputName}.idl")}
 
     /**
      * Compiler's main output file.

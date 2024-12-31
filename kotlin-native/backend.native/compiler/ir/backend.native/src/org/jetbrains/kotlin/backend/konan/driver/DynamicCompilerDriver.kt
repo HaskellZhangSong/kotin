@@ -40,6 +40,7 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
                         CompilerOutputKind.PROGRAM -> produceBinary(engine, config, environment)
                         CompilerOutputKind.DYNAMIC -> produceCLibrary(engine, config, environment)
                         CompilerOutputKind.STATIC -> produceCLibrary(engine, config, environment)
+                        CompilerOutputKind.THIDL -> produceThIdl(engine, config, environment)
                         CompilerOutputKind.FRAMEWORK -> produceObjCFramework(engine, config, environment)
                         CompilerOutputKind.LIBRARY -> produceKlib(engine, config, environment)
                         CompilerOutputKind.BITCODE -> error("Bitcode output kind is obsolete.")
@@ -85,6 +86,28 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
     }
 
     private fun produceCLibrary(engine: PhaseEngine<PhaseContext>, config: KonanConfig, environment: KotlinCoreEnvironment) {
+        val frontendOutput = performanceManager.trackAnalysis { engine.runFrontend(config, environment) } ?: return
+
+        val (psiToIrOutput, cAdapterElements) = performanceManager.trackIRTranslation {
+            engine.runPsiToIr(frontendOutput, isProducingLibrary = false) {
+                if (config.cInterfaceGenerationMode == CInterfaceGenerationMode.V1) {
+                    it.runPhase(BuildCExports, frontendOutput)
+                } else {
+                    null
+                }
+            }
+        }
+        require(psiToIrOutput is PsiToIrOutput.ForBackend)
+
+        performanceManager.trackGeneration {
+            val backendContext = createBackendContext(config, frontendOutput, psiToIrOutput) {
+                it.cAdapterExportedElements = cAdapterElements
+            }
+            engine.runBackend(backendContext, psiToIrOutput.irModule)
+        }
+    }
+
+    private fun produceThIdl(engine: PhaseEngine<PhaseContext>, config: KonanConfig, environment: KotlinCoreEnvironment) {
         val frontendOutput = performanceManager.trackAnalysis { engine.runFrontend(config, environment) } ?: return
 
         val (psiToIrOutput, cAdapterElements) = performanceManager.trackIRTranslation {

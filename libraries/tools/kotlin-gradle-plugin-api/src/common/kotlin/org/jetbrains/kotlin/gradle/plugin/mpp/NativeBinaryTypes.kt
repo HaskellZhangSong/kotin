@@ -112,7 +112,10 @@ enum class NativeOutputKind(
         /** Frameworks are available only for Apple platforms. */
         override fun availableFor(target: KonanTarget) =
             target.family.isAppleFamily
-    };
+    },
+    THIDL(CompilerOutputKind.THIDL,
+        "thidl",
+        description = "taihe idl");
 
     /**
      * Determines whether this instance of `NativeOutputKind` is supported for the specified target platform.

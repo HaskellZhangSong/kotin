@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.driver.PhaseContext
 import org.jetbrains.kotlin.backend.konan.driver.PhaseEngine
 import org.jetbrains.kotlin.backend.konan.driver.utilities.CExportFiles
+import org.jetbrains.kotlin.backend.konan.driver.utilities.TaiheFiles
 import org.jetbrains.kotlin.backend.konan.driver.utilities.createTempFiles
 import org.jetbrains.kotlin.backend.konan.ir.konanLibrary
 import org.jetbrains.kotlin.cli.common.CommonCompilerPerformanceManager
@@ -113,8 +114,13 @@ internal fun <C : PhaseContext> PhaseEngine<C>.runBackend(backendContext: Contex
                                 def = if (config.target.family == Family.MINGW) outputFiles.cAdapterDef.javaFile() else null,
                         )
                     } else null
+                    val taiheFiles = if (config.produceThIdl) {
+                        TaiheFiles(
+                                taiheIdl = tempFiles.create("api", ".idl").javaFile()
+                        )
+                    } else null
                     // TODO: Make this work if we first compile all the fragments and only after that run the link phases.
-                    generationStateEngine.compileModule(fragment.irModule, bitcodeFile, cExportFiles)
+                    generationStateEngine.compileModule(fragment.irModule, bitcodeFile, cExportFiles, taiheFiles)
                     // Split here
                     val dependenciesTrackingResult = generationState.dependenciesTracker.collectResult()
                     val depsFilePath = config.writeSerializedDependencies
@@ -268,7 +274,7 @@ internal data class ModuleCompilationOutput(
  * 4. Optimizes it.
  * 5. Serializes it to a bitcode file.
  */
-internal fun PhaseEngine<NativeGenerationState>.compileModule(module: IrModuleFragment, bitcodeFile: java.io.File, cExportFiles: CExportFiles?) {
+internal fun PhaseEngine<NativeGenerationState>.compileModule(module: IrModuleFragment, bitcodeFile: java.io.File, cExportFiles: CExportFiles?,taiheFiles: TaiheFiles?) {
     runBackendCodegen(module, cExportFiles)
     val checkExternalCalls = context.config.checkStateAtExternalCalls
     if (checkExternalCalls) {

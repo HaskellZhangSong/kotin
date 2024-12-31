@@ -34,3 +34,7 @@ internal class CExportFiles(
         val header: File,
         val def: File?,
 )
+
+internal class TaiheFiles(
+        val taiheIdl: File
+)

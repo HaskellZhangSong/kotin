@@ -24,6 +24,7 @@ val KonanConfig.isFinalBinary: Boolean get() = when (this.produce) {
     CompilerOutputKind.LIBRARY, CompilerOutputKind.BITCODE -> false
     CompilerOutputKind.FRAMEWORK -> !omitFrameworkBinary
     CompilerOutputKind.TEST_BUNDLE -> true
+    CompilerOutputKind.THIDL -> true
 }
 
 val CompilerOutputKind.isNativeLibrary: Boolean
@@ -34,6 +35,9 @@ val CompilerOutputKind.isNativeLibrary: Boolean
  */
 val KonanConfig.produceCInterface: Boolean
     get() = this.produce.isNativeLibrary && this.cInterfaceGenerationMode != CInterfaceGenerationMode.NONE
+
+val KonanConfig.produceThIdl: Boolean
+    get() = this.produce == CompilerOutputKind.THIDL
 
 val CompilerOutputKind.involvesBitcodeGeneration: Boolean
     get() = this != CompilerOutputKind.LIBRARY

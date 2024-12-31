@@ -335,7 +335,9 @@ internal fun RelocationModeFlags.currentRelocationMode(context: PhaseContext): R
         when (determineLinkerOutput(context)) {
             LinkerOutputKind.DYNAMIC_LIBRARY -> dynamicLibraryRelocationMode
             LinkerOutputKind.STATIC_LIBRARY -> staticLibraryRelocationMode
+            LinkerOutputKind.THIDL -> dynamicLibraryRelocationMode
             LinkerOutputKind.EXECUTABLE -> executableRelocationMode
+
         }
 
 private fun RelocationModeFlags.Mode.translateToLlvmRelocMode() = when (this) {

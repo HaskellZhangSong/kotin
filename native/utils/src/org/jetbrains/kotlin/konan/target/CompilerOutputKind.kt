@@ -17,6 +17,10 @@ enum class CompilerOutputKind {
         override fun suffix(target: KonanTarget?) = ".${target!!.family.staticSuffix}"
         override fun prefix(target: KonanTarget?) = target!!.family.staticPrefix
     },
+    THIDL {
+        override fun suffix(target: KonanTarget?) = ".${target!!.family.dynamicSuffix}"
+        override fun prefix(target: KonanTarget?) = target!!.family.dynamicPrefix
+    },
     FRAMEWORK {
         override fun suffix(target: KonanTarget?): String = ".framework"
     },

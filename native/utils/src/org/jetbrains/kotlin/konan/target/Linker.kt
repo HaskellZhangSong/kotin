@@ -26,6 +26,7 @@ typealias ObjectFile = String
 typealias ExecutableFile = String
 
 enum class LinkerOutputKind {
+    THIDL,
     DYNAMIC_LIBRARY,
     STATIC_LIBRARY,
     EXECUTABLE
@@ -162,6 +163,7 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
             when (kind) {
                 LinkerOutputKind.EXECUTABLE -> +listOf("-fPIE", "-pie")
                 LinkerOutputKind.DYNAMIC_LIBRARY -> +listOf("-fPIC", "-shared")
+                LinkerOutputKind.THIDL -> +listOf("-fPIC", "-shared")
                 LinkerOutputKind.STATIC_LIBRARY -> {}
             }
             +"-target"
@@ -204,6 +206,7 @@ class OhosLinker(targetProperties: OhosConfigurables)
             when (kind) {
                 LinkerOutputKind.EXECUTABLE -> +listOf("-fPIE", "-pie")
                 LinkerOutputKind.DYNAMIC_LIBRARY -> +listOf("-fPIC", "-shared")
+                LinkerOutputKind.THIDL -> +listOf("-fPIC", "-shared")
                 LinkerOutputKind.STATIC_LIBRARY -> {}
             }
             +objectFiles
