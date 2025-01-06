@@ -27,7 +27,8 @@ import java.io.File
  *  @param defFile DLL module definition file
  *  @param cppAdapterFile C++ source that will be populated with glue code between K/N runtime and exported API.
  */
-internal class CAdapterApiExporter(
+internal class
+CAdapterApiExporter(
         private val elements: CAdapterExportedElements,
         private val headerFile: File,
         private val defFile: File?,

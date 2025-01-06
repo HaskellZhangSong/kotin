@@ -109,7 +109,6 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
 
     private fun produceThIdl(engine: PhaseEngine<PhaseContext>, config: KonanConfig, environment: KotlinCoreEnvironment) {
         val frontendOutput = performanceManager.trackAnalysis { engine.runFrontend(config, environment) } ?: return
-
         val (psiToIrOutput, cAdapterElements) = performanceManager.trackIRTranslation {
             engine.runPsiToIr(frontendOutput, isProducingLibrary = false) {
                 if (config.cInterfaceGenerationMode == CInterfaceGenerationMode.V1) {

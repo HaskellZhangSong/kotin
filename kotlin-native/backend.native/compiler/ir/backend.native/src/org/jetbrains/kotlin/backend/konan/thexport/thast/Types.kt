@@ -6,7 +6,7 @@ abstract class Type {
 }
 
 enum class BuiltInTypeKind(i: Int) {
-    VOID(0), BOOL(1), INTGER(2), FLOAT(3), STRING(10)
+    VOID(0), BOOL(1), INTEGER(2), FLOAT(3), STRING(10)
 }
 
 open class BuiltInType(val name : String, val kind : BuiltInTypeKind) : Type() {
@@ -27,14 +27,14 @@ object PrimTypes {
     val VOID = BuiltInType("void", BuiltInTypeKind.VOID)
     val BOOL = BuiltInType("bool", BuiltInTypeKind.BOOL)
     val STRING = BuiltInType("string", BuiltInTypeKind.STRING)
-    val I8 =  ScalarType("i8", BuiltInTypeKind.INTGER, 8,true, false)
-    val I16 = ScalarType("i16", BuiltInTypeKind.INTGER, 16,true, false)
-    val I32 = ScalarType("i32", BuiltInTypeKind.INTGER, 32,true, false)
-    val I64 = ScalarType("i64", BuiltInTypeKind.INTGER, 64,true, false)
-    val U8 = ScalarType("u8", BuiltInTypeKind.INTGER, 8,   false, false)
-    val U16 = ScalarType("u16", BuiltInTypeKind.INTGER, 16,false, false)
-    val U32 = ScalarType("u32", BuiltInTypeKind.INTGER, 32,false, false)
-    val U64 = ScalarType("u64", BuiltInTypeKind.INTGER, 64,false, false)
+    val I8 =  ScalarType("i8", BuiltInTypeKind.INTEGER, 8,true, false)
+    val I16 = ScalarType("i16", BuiltInTypeKind.INTEGER, 16,true, false)
+    val I32 = ScalarType("i32", BuiltInTypeKind.INTEGER, 32,true, false)
+    val I64 = ScalarType("i64", BuiltInTypeKind.INTEGER, 64,true, false)
+    val U8 = ScalarType("u8", BuiltInTypeKind.INTEGER, 8,   false, false)
+    val U16 = ScalarType("u16", BuiltInTypeKind.INTEGER, 16,false, false)
+    val U32 = ScalarType("u32", BuiltInTypeKind.INTEGER, 32,false, false)
+    val U64 = ScalarType("u64", BuiltInTypeKind.INTEGER, 64,false, false)
     val F32 = ScalarType("f32", BuiltInTypeKind.FLOAT, 32, true, true)
     val F64 = ScalarType("f64", BuiltInTypeKind.FLOAT, 64, true, true)
 }

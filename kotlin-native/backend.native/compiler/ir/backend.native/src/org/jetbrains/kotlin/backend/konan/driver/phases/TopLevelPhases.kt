@@ -29,6 +29,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
+import org.jetbrains.kotlin.backend.konan.thexport.*
+
 internal fun PhaseEngine<PhaseContext>.runFrontend(config: KonanConfig, environment: KotlinCoreEnvironment): FrontendPhaseOutput.Full? {
     val frontendOutput = useContext(FrontendContextImpl(config)) { it.runPhase(FrontendPhase, environment) }
     return frontendOutput as? FrontendPhaseOutput.Full
@@ -116,7 +118,8 @@ internal fun <C : PhaseContext> PhaseEngine<C>.runBackend(backendContext: Contex
                     } else null
                     val taiheFiles = if (config.produceThIdl) {
                         TaiheFiles(
-                                taiheIdl = tempFiles.create("api", ".idl").javaFile()
+                                // api.idl
+                                taiheIdl = outputFiles.thIdl.javaFile()
                         )
                     } else null
                     // TODO: Make this work if we first compile all the fragments and only after that run the link phases.
@@ -276,6 +279,7 @@ internal data class ModuleCompilationOutput(
  */
 internal fun PhaseEngine<NativeGenerationState>.compileModule(module: IrModuleFragment, bitcodeFile: java.io.File, cExportFiles: CExportFiles?,taiheFiles: TaiheFiles?) {
     runBackendCodegen(module, cExportFiles)
+    runGenerateTaihe(module, taiheFiles)
     val checkExternalCalls = context.config.checkStateAtExternalCalls
     if (checkExternalCalls) {
         runPhase(CheckExternalCallsPhase)
@@ -401,6 +405,16 @@ internal fun PhaseEngine<NativeGenerationState>.runBackendCodegen(module: IrModu
     }
     runPhase(LinkBitcodeDependenciesPhase, generatedBitcodeFiles)
 }
+
+internal fun PhaseEngine<NativeGenerationState>.runGenerateTaihe(module: IrModuleFragment, taihe: TaiheFiles?) {
+    // TODO
+    require(taihe != null)
+    val input = TaiheGenerateApiInput(
+            context.context.cAdapterExportedElements!!,
+            taihe.taiheIdl)
+     runPhase(TaiheGenerateApiPhase, input)
+}
+
 
 /**
  * Compile lowered [module] to object file.
