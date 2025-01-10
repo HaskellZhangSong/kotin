@@ -16,8 +16,8 @@ class FunDecl(annotations: Annotations?,
               val retType: Pair<Annotation?, Type>) : Decl(annotations) {
     override fun toString(): String {
         val funAnno = annotations.toString()
-        val retAnno = "[${retType.first?.toString() ?: ""}]"
-        val funStr = "function $name(${parameters.joinToString(",") { it.toString() }}): $retAnno ${retType.second}"
+        val retAnno = if (retType.first == null) "" else "[${retType.first?.toString()}]"
+        val funStr = "function $name(${parameters.joinToString(",") { it.toString() }}): ${retAnno} ${retType.second}"
         return if (annotations == null) funStr else listOf(funAnno, funStr).joinToString("\n")
     }
 }

@@ -408,11 +408,12 @@ internal fun PhaseEngine<NativeGenerationState>.runBackendCodegen(module: IrModu
 
 internal fun PhaseEngine<NativeGenerationState>.runGenerateTaihe(module: IrModuleFragment, taihe: TaiheFiles?) {
     // TODO
-    require(taihe != null)
-    val input = TaiheGenerateApiInput(
-            context.context.cAdapterExportedElements!!,
-            taihe.taiheIdl)
-     runPhase(TaiheGenerateApiPhase, input)
+    if (taihe != null) {
+        val input = TaiheGenerateApiInput(
+                context.context.cAdapterExportedElements!!,
+                taihe.taiheIdl)
+        runPhase(TaiheGenerateApiPhase, input)
+    }
 }
 
 

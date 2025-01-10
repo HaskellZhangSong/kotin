@@ -1,6 +1,5 @@
 package org.jetbrains.kotlin.backend.konan.thexport.thast
 
-
 abstract class Type {
 
 }
