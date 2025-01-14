@@ -5,7 +5,7 @@ abstract class Type {
 }
 
 enum class BuiltInTypeKind(i: Int) {
-    VOID(0), BOOL(1), INTEGER(2), FLOAT(3), STRING(10)
+    VOID(0), BOOL(1), INTEGER(2), FLOAT(3), STRING(10), CPOINTER(11)
 }
 
 open class BuiltInType(val name : String, val kind : BuiltInTypeKind) : Type() {
@@ -25,7 +25,8 @@ class ScalarType(
 object PrimTypes {
     val VOID = BuiltInType("void", BuiltInTypeKind.VOID)
     val BOOL = BuiltInType("bool", BuiltInTypeKind.BOOL)
-    val STRING = BuiltInType("string", BuiltInTypeKind.STRING)
+    val STRING = BuiltInType("String", BuiltInTypeKind.STRING)
+    val CPOINTER = BuiltInType("CPointer", BuiltInTypeKind.CPOINTER)
     val I8 =  ScalarType("i8", BuiltInTypeKind.INTEGER, 8,true, false)
     val I16 = ScalarType("i16", BuiltInTypeKind.INTEGER, 16,true, false)
     val I32 = ScalarType("i32", BuiltInTypeKind.INTEGER, 32,true, false)
