@@ -32,8 +32,8 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isUnit
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns.*
-
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 
@@ -84,7 +84,22 @@ internal class TaiheApiExporter(
 
     private fun KotlinType.includeToSignature() = !this.isUnit()
 
-    private fun KotlinTypeToTaiheType(ty: KotlinType): Type {
+    private val simpleNameMapping = mapOf(
+            "<this>" to "thiz",
+            "<set-?>" to "set"
+    )
+
+    private fun translateName(name: Name): String {
+        val nameString = name.asString()
+        return when {
+            simpleNameMapping.contains(nameString) -> simpleNameMapping[nameString]!!
+            cKeywords.contains(nameString) -> "${nameString}_"
+            name.isSpecial -> nameString.replace("[<> ]".toRegex(), "_")
+            else -> nameString
+        }
+    }
+
+    private fun kotlinTypeToTaiheType(ty: KotlinType): Type {
         return when {
             isByte(ty) -> PrimTypes.I8
             isShort(ty) -> PrimTypes.I16
@@ -99,8 +114,27 @@ internal class TaiheApiExporter(
             isString(ty) -> PrimTypes.STRING
             isUnit(ty) -> PrimTypes.VOID
             KotlinPointerTypeUtils.isCPointerType(ty) -> PrimTypes.CPOINTER
-            else -> throw Error("${ty} is not implemented")
+            else -> RefType(listOf(), "${ty}")
         }
+    }
+    fun kotlinFunctionToTaiheFunction(e: ExportedElement): FunDecl {
+        val anno: Annotations = Annotations(listOf(Annotation("inner_name", listOf("\"${e.cname}\""))))
+        val original = e.declaration.original as FunctionDescriptor
+        val descriptor = e.declaration.original
+        val name = when (descriptor) {
+            is ConstructorDescriptor -> "init"
+            is PropertyGetterDescriptor -> "get_${descriptor.correspondingProperty.name.asString()}"
+            is PropertySetterDescriptor -> "set_${descriptor.correspondingProperty.name.asString()}"
+            is FunctionDescriptor -> e.declaration.name
+            else -> descriptor.fqNameSafe.shortName().asString()
+        }
+        val explicitParams = original.explicitParameters
+        val params = ArrayList(original.explicitParameters
+                .filter { it.type.includeToSignature() }
+                .map { Parameter(null, "${translateName(it.name)}", kotlinTypeToTaiheType(it.type)) })
+        val returned = kotlinTypeToTaiheType(original.returnType!!)
+        val fd: FunDecl = FunDecl(anno, "${name}", params, Pair(null, returned))
+        return fd
     }
 
     fun makeScopeDefinitions(scope: ExportedElementScope) {
@@ -111,27 +145,21 @@ internal class TaiheApiExporter(
         }
         scope.elements.forEach {
             when {
-                it.isFunction -> {
-                    val anno: Annotations = Annotations(listOf(Annotation("inner_name", listOf("${it.cname}"))))
-                    val name = it.declaration.name
-                    val original = it.declaration.original as FunctionDescriptor
-                    val explicitParams = original.explicitParameters
-                    val temp0 = explicitParams[0].getType().constructor
-                    val params = ArrayList(original.explicitParameters
-                            .filter { it.type.includeToSignature() }
-                            .map { Parameter(null, "${it.name}", KotlinTypeToTaiheType(it.type)) })
-
-                    val returned = when {
-                        original is ConstructorDescriptor ->
-                            throw Error("not implemented")
-                        else ->
-                            KotlinTypeToTaiheType(original.returnType!!)
-                        }
-                    val fd: FunDecl = FunDecl(anno, "${name}", params, Pair(null, returned))
-                    output("${fd}")
+                it.scope.kind == ScopeKind.PACKAGE && it.isFunction -> {
+                    val fd: FunDecl = kotlinFunctionToTaiheFunction(it)
+                    output("${fd}\n")
                     outputStreamWriter.flush()
                 }
-                else -> {}
+
+                it.scope.kind == ScopeKind.CLASS && it.isClass -> {
+                    val interfaceName = it.name
+                    val functions = it.scope.elements.filter {it.isFunction}
+                    val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it) }
+
+                    val iface = InterfaceDecl(null, interfaceName, taiheFunc)
+                    output("${iface}")
+                    outputStreamWriter.flush()
+                }
             }
         }
     }

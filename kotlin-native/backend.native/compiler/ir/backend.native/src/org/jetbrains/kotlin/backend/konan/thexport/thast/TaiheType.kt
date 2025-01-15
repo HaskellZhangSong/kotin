@@ -8,15 +8,15 @@ enum class BuiltInTypeKind(i: Int) {
     VOID(0), BOOL(1), INTEGER(2), FLOAT(3), STRING(10), CPOINTER(11)
 }
 
-open class BuiltInType(val name : String, val kind : BuiltInTypeKind) : Type() {
+open class BuiltInType(val name : String, val kind : BuiltInTypeKind): Type() {
     override fun toString(): String {
         return this.name
     }
 }
 
-class ScalarType(
+class ScalarType (
     name: String, kind : BuiltInTypeKind,
-    val width : Int, val isSigned : Boolean, val isFloat : Boolean) : BuiltInType(name, kind) {
+    val width : Int, val isSigned : Boolean, val isFloat : Boolean): BuiltInType(name, kind) {
     override fun toString(): String {
         return name
     }
@@ -39,8 +39,8 @@ object PrimTypes {
     val F64 = ScalarType("f64", BuiltInTypeKind.FLOAT, 64, true, true)
 }
 
-class RefType(val scope: List<String>, val typeName : String) {
+class RefType(val scope: List<String>, val typeName : String) : Type() {
     override fun toString(): String {
-        return scope.joinToString(".") + "." + typeName
+        return (if (!scope.isEmpty()) {scope.joinToString(".") + "."} else "") + typeName
     }
 }

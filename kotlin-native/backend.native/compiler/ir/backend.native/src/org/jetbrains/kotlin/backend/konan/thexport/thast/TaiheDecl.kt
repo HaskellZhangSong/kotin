@@ -17,7 +17,7 @@ class FunDecl(annotations: Annotations?,
     override fun toString(): String {
         val funAnno = annotations.toString()
         val retAnno = if (retType.first == null) "" else "[${retType.first?.toString()}]"
-        val funStr = "function $name(${parameters.joinToString(",") { it.toString() }}): ${retAnno} ${retType.second}"
+        val funStr = "function $name(${parameters.joinToString(",") { it.toString() }}):${retAnno} ${retType.second};"
         return if (annotations == null) funStr else listOf(funAnno, funStr).joinToString("\n")
     }
 }
@@ -25,7 +25,16 @@ class FunDecl(annotations: Annotations?,
 class ClassDecl(annotations: Annotations?,
                 val name: String,
                 val fields : List<Parameter>,
-                val functions : List<FunDecl>) {
+                val functions : List<FunDecl>): Decl(annotations) {
 
+}
 
+class InterfaceDecl(annotations: Annotations?,
+                val name: String,
+                val functions : List<FunDecl>): Decl(annotations) {
+    override fun toString(): String {
+        val funAnno = annotations.toString()
+        val istr = "interface ${name} {\n${functions.joinToString("\n")}\n}\n"
+        return istr
+    }
 }
