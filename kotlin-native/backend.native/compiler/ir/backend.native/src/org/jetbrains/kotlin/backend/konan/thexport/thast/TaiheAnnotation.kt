@@ -11,9 +11,10 @@ class Annotation(val ident: String, val args: List<String>?) {
         }
     }
 }
-
-class Annotations(val ans : List<Annotation>) {
-    override fun toString(): String {
-        return "[${ans.joinToString(",")}]"
-    }
-}
+typealias Annotations = List<Annotation>g
+//
+//class Annotations(val ans : List<Annotation>) {
+//    override fun toString(): String {
+//        return "[${ans.joinToString(",")}]"
+//    }
+//}

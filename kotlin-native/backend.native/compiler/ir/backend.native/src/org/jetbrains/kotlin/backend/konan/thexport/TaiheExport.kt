@@ -118,7 +118,9 @@ internal class TaiheApiExporter(
         }
     }
     fun kotlinFunctionToTaiheFunction(e: ExportedElement): FunDecl {
-        val anno: Annotations = Annotations(listOf(Annotation("inner_name", listOf("\"${e.cname}\""))))
+        val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map{ it.toString() }.contains("@ArkTsString")
+        val arkTsStringAnnotations = if (containsArkTsString) { listOf(Annotation("ArkTsString", null)) } else { listOf() }
+        val anno = listOf(Annotation("inner_name", listOf("\"${e.cname}\""))) + arkTsStringAnnotations
         val original = e.declaration.original as FunctionDescriptor
         val descriptor = e.declaration.original
         val name = when (descriptor) {
@@ -154,7 +156,7 @@ internal class TaiheApiExporter(
                 it.scope.kind == ScopeKind.CLASS && it.isClass -> {
                     val cd = it.declaration as DeserializedClassDescriptor
                     val kind = cd.getKind()
-                    val anno = Annotations(listOf(Annotation("type", listOf("${kind}".lowercase()))))
+                    val anno = listOf(Annotation("type", listOf("${kind}".lowercase())))
                     val interfaceName = it.name
                     val functions = it.scope.elements.filter {it.isFunction}
                     val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it) }

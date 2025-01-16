@@ -1,6 +1,6 @@
 package org.jetbrains.kotlin.backend.konan.thexport.thast
 
-abstract class Decl(val annotations: Annotations?) {
+abstract class Decl(val annotations: List<Annotation>?) {
 
 }
 
