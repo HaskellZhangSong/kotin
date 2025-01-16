@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 internal data class TaiheGenerateApiInput(
         val elements: CAdapterExportedElements,
         val taiheFile: File
@@ -152,11 +152,13 @@ internal class TaiheApiExporter(
                 }
 
                 it.scope.kind == ScopeKind.CLASS && it.isClass -> {
+                    val cd = it.declaration as DeserializedClassDescriptor
+                    val kind = cd.getKind()
+                    val anno = Annotations(listOf(Annotation("type", listOf("${kind}".lowercase()))))
                     val interfaceName = it.name
                     val functions = it.scope.elements.filter {it.isFunction}
                     val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it) }
-
-                    val iface = InterfaceDecl(null, interfaceName, taiheFunc)
+                    val iface = InterfaceDecl(anno, interfaceName, taiheFunc)
                     output("${iface}")
                     outputStreamWriter.flush()
                 }
