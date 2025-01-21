@@ -11,7 +11,7 @@ class Annotation(val ident: String, val args: List<String>?) {
         }
     }
 }
-typealias Annotations = List<Annotation>g
+typealias Annotations = List<Annotation>
 //
 //class Annotations(val ans : List<Annotation>) {
 //    override fun toString(): String {

@@ -439,10 +439,10 @@ class GccBasedLinker(targetProperties: GccConfigurables)
             }
             return staticGnuArCommands(ar, executable, objectFiles, libraries)
         }
-        val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY
+        val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY || kind == LinkerOutputKind.THIDL
         val crtPrefix = "$absoluteTargetSysRoot/$crtFilesLocation"
         // TODO: Can we extract more to the konan.configurables?
-        return listOf(Command(absoluteLinker).apply {
+        val command = listOf(Command(absoluteLinker).apply {
             +"--sysroot=${absoluteTargetSysRoot}"
             +"-export-dynamic"
             +"-z"
@@ -486,6 +486,8 @@ class GccBasedLinker(targetProperties: GccConfigurables)
             +if (dynamic) "$libGcc/crtendS.o" else "$libGcc/crtend.o"
             +"$crtPrefix/crtn.o"
         })
+        println(command)
+        return command
     }
 }
 
