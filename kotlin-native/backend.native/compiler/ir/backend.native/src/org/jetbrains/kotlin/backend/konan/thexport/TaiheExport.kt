@@ -60,6 +60,7 @@ internal object KotlinPointerTypeUtils {
 }
 
 internal class TaiheApiExporter(
+        private val prefix: String,
         private val elements: CAdapterExportedElements,
         private val taiheFile: File
 ) {
@@ -167,16 +168,22 @@ internal class TaiheApiExporter(
             }
         }
     }
-
+    fun makePrefixAnnotation() {
+        output("[prefix(\"${prefix}\")]")
+        outputStreamWriter.flush()
+    }
     fun makeIDL() {
         println("Making idl")
         makeGlobalTaiheDecl()
+        makePrefixAnnotation()
     }
 }
+
 internal val TaiheGenerateApiPhase = createSimpleNamedCompilerPhase<PhaseContext, TaiheGenerateApiInput>(
         name = "TaiheExportGenerateApi",
         description = "Create Taihe idl file for the exported API"
 ) {
     context, input ->
-    TaiheApiExporter(elements = input.elements, input.taiheFile).makeIDL()
+    val prefix = context.config.fullExportedNamePrefix.replace("-|\\.".toRegex(), "_")
+    TaiheApiExporter(prefix = prefix, elements = input.elements, input.taiheFile).makeIDL()
 }
