@@ -121,7 +121,7 @@ class K2NativeCompilerArguments : CommonKlibBasedCompilerArguments() {
 
     @Argument(
         value = "-produce", shortName = "-p",
-        valueDescription = "{program|static|dynamic|framework|library|bitcode|taiheIDL}",
+        valueDescription = "{program|static|dynamic|framework|library|bitcode|thidl|thidl_static}",
         description = "Specify the output file kind."
     )
     var produce: String? = null

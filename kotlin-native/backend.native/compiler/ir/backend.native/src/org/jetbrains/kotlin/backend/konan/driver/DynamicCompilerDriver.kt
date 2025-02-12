@@ -41,6 +41,7 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
                         CompilerOutputKind.DYNAMIC -> produceCLibrary(engine, config, environment)
                         CompilerOutputKind.STATIC -> produceCLibrary(engine, config, environment)
                         CompilerOutputKind.THIDL -> produceThIdl(engine, config, environment)
+                        CompilerOutputKind.THIDL_STATIC -> produceThIdl(engine, config, environment)
                         CompilerOutputKind.FRAMEWORK -> produceObjCFramework(engine, config, environment)
                         CompilerOutputKind.LIBRARY -> produceKlib(engine, config, environment)
                         CompilerOutputKind.BITCODE -> error("Bitcode output kind is obsolete.")
