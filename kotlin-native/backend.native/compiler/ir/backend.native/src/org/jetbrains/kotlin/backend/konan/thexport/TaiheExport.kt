@@ -156,7 +156,8 @@ internal class TaiheApiExporter(
                 it.scope.kind == ScopeKind.CLASS && it.isClass -> {
                     val cd = it.declaration as DeserializedClassDescriptor
                     val kind = cd.getKind()
-                    val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())))
+                    val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
+                                      Annotation("type_function", listOf("\"${it.cname}_type\"")))
                     val interfaceName = it.name
                     val functions = it.scope.elements.filter {it.isFunction}
                     val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
