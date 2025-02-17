@@ -19,8 +19,8 @@ internal fun determineLinkerOutput(context: PhaseContext): LinkerOutputKind =
             CompilerOutputKind.TEST_BUNDLE,
             CompilerOutputKind.DYNAMIC_CACHE,
             CompilerOutputKind.DYNAMIC -> LinkerOutputKind.DYNAMIC_LIBRARY
-            CompilerOutputKind.THIDL -> LinkerOutputKind.THIDL
-            CompilerOutputKind.THIDL_STATIC -> LinkerOutputKind.THIDL_STATIC
+            CompilerOutputKind.TAIHE_DYNAMIC -> LinkerOutputKind.TAIHE_DYNAMIC
+            CompilerOutputKind.TAIHE_STATIC -> LinkerOutputKind.TAIHE_STATIC
             CompilerOutputKind.STATIC_CACHE,
             CompilerOutputKind.STATIC -> LinkerOutputKind.STATIC_LIBRARY
             CompilerOutputKind.PROGRAM -> run {

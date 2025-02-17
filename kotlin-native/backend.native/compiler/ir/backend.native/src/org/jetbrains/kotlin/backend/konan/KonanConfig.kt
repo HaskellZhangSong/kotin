@@ -651,8 +651,8 @@ class KonanConfig(val project: Project, val configuration: CompilerConfiguration
             explicitMode != null -> explicitMode
             produce == CompilerOutputKind.DYNAMIC ||
                     produce == CompilerOutputKind.STATIC ||
-                    produce == CompilerOutputKind.THIDL ||
-                    produce == CompilerOutputKind.THIDL_STATIC
+                    produce == CompilerOutputKind.TAIHE_DYNAMIC ||
+                    produce == CompilerOutputKind.TAIHE_STATIC
                 -> CInterfaceGenerationMode.V1
             else -> CInterfaceGenerationMode.NONE
         }

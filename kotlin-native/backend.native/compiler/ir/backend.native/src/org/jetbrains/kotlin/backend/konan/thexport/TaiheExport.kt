@@ -173,7 +173,6 @@ internal class TaiheApiExporter(
         outputStreamWriter.flush()
     }
     fun makeIDL() {
-        println("Making idl")
         makeGlobalTaiheDecl()
         makePrefixAnnotation()
     }

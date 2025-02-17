@@ -40,8 +40,8 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
                         CompilerOutputKind.PROGRAM -> produceBinary(engine, config, environment)
                         CompilerOutputKind.DYNAMIC -> produceCLibrary(engine, config, environment)
                         CompilerOutputKind.STATIC -> produceCLibrary(engine, config, environment)
-                        CompilerOutputKind.THIDL -> produceThIdl(engine, config, environment)
-                        CompilerOutputKind.THIDL_STATIC -> produceThIdl(engine, config, environment)
+                        CompilerOutputKind.TAIHE_DYNAMIC -> produceTaihe(engine, config, environment)
+                        CompilerOutputKind.TAIHE_STATIC -> produceTaihe(engine, config, environment)
                         CompilerOutputKind.FRAMEWORK -> produceObjCFramework(engine, config, environment)
                         CompilerOutputKind.LIBRARY -> produceKlib(engine, config, environment)
                         CompilerOutputKind.BITCODE -> error("Bitcode output kind is obsolete.")
@@ -108,7 +108,7 @@ internal class DynamicCompilerDriver(private val performanceManager: CommonCompi
         }
     }
 
-    private fun produceThIdl(engine: PhaseEngine<PhaseContext>, config: KonanConfig, environment: KotlinCoreEnvironment) {
+    private fun produceTaihe(engine: PhaseEngine<PhaseContext>, config: KonanConfig, environment: KotlinCoreEnvironment) {
         val frontendOutput = performanceManager.trackAnalysis { engine.runFrontend(config, environment) } ?: return
         val (psiToIrOutput, cAdapterElements) = performanceManager.trackIRTranslation {
             engine.runPsiToIr(frontendOutput, isProducingLibrary = false) {

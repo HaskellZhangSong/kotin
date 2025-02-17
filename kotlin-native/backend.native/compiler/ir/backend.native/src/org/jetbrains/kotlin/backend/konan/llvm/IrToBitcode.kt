@@ -420,7 +420,7 @@ internal class CodeGeneratorVisitor(
             overrideRuntimeGlobals()
             appendLlvmUsed("llvm.used", llvm.usedFunctions.map { it.toConstPointer().llvm } + llvm.usedGlobals)
             appendLlvmUsed("llvm.compiler.used", llvm.compilerUsedGlobals)
-            if (context.config.produceCInterface || context.config.produceThIdl) {
+            if (context.config.produceCInterface || context.config.produceTaihe) {
                 context.cAdapterExportedElements?.let { appendCAdapters(it) }
             }
         }

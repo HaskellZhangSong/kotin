@@ -113,9 +113,13 @@ enum class NativeOutputKind(
         override fun availableFor(target: KonanTarget) =
             target.family.isAppleFamily
     },
-    THIDL(CompilerOutputKind.THIDL,
-        "thidl",
-        description = "taihe idl");
+    TAIHE_DYNAMIC(CompilerOutputKind.TAIHE_DYNAMIC,
+        "taihe_dynamic",
+        description = "taihe interface description language and dynamic lib"),
+
+    TAIHE_STATIC(CompilerOutputKind.TAIHE_STATIC,
+        "taihe_static",
+        description = "taihe interface description language and static lib");
 
     /**
      * Determines whether this instance of `NativeOutputKind` is supported for the specified target platform.

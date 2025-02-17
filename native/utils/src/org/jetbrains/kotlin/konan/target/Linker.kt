@@ -26,8 +26,8 @@ typealias ObjectFile = String
 typealias ExecutableFile = String
 
 enum class LinkerOutputKind {
-    THIDL,
-    THIDL_STATIC,
+    TAIHE_DYNAMIC,
+    TAIHE_STATIC,
     DYNAMIC_LIBRARY,
     STATIC_LIBRARY,
     EXECUTABLE
@@ -145,7 +145,7 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
         require(sanitizer == null) {
             "Sanitizers are unsupported"
         }
-        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.THIDL_STATIC)
+        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.TAIHE_STATIC)
             return staticGnuArCommands(ar, executable, objectFiles, libraries)
 
         val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY
@@ -164,8 +164,8 @@ class AndroidLinker(targetProperties: AndroidConfigurables)
             when (kind) {
                 LinkerOutputKind.EXECUTABLE -> +listOf("-fPIE", "-pie")
                 LinkerOutputKind.DYNAMIC_LIBRARY -> +listOf("-fPIC", "-shared")
-                LinkerOutputKind.THIDL -> +listOf("-fPIC", "-shared")
-                LinkerOutputKind.THIDL_STATIC -> {}
+                LinkerOutputKind.TAIHE_DYNAMIC -> +listOf("-fPIC", "-shared")
+                LinkerOutputKind.TAIHE_STATIC -> {}
                 LinkerOutputKind.STATIC_LIBRARY -> {}
             }
             +"-target"
@@ -198,7 +198,7 @@ class OhosLinker(targetProperties: OhosConfigurables)
         require(sanitizer == null) {
             "Sanitizers are unsupported"
         }
-        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.THIDL_STATIC)
+        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.TAIHE_STATIC)
             return staticGnuArCommands(ar, executable, objectFiles, libraries)
 
         val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY
@@ -208,8 +208,8 @@ class OhosLinker(targetProperties: OhosConfigurables)
             when (kind) {
                 LinkerOutputKind.EXECUTABLE -> +listOf("-fPIE", "-pie")
                 LinkerOutputKind.DYNAMIC_LIBRARY -> +listOf("-fPIC", "-shared")
-                LinkerOutputKind.THIDL -> +listOf("-fPIC", "-shared")
-                LinkerOutputKind.THIDL_STATIC -> {}
+                LinkerOutputKind.TAIHE_DYNAMIC -> +listOf("-fPIC", "-shared")
+                LinkerOutputKind.TAIHE_STATIC -> {}
                 LinkerOutputKind.STATIC_LIBRARY -> {}
             }
             +objectFiles
@@ -302,7 +302,7 @@ class MacOSBasedLinker(targetProperties: AppleConfigurables)
             listOf("-filelist", librariesListFile.absolutePath)
         }
 
-        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.THIDL_STATIC) {
+        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.TAIHE_STATIC) {
             require(sanitizer == null) {
                 "Sanitizers are unsupported"
             }
@@ -436,13 +436,13 @@ class GccBasedLinker(targetProperties: GccConfigurables)
     override fun filterStaticLibraries(binaries: List<String>) = binaries.filter { it.isUnixStaticLib }
 
     override fun LinkerArguments.finalLinkCommands(): List<Command> {
-        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.THIDL_STATIC) {
+        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.TAIHE_STATIC) {
             require(sanitizer == null) {
                 "Sanitizers are unsupported"
             }
             return staticGnuArCommands(ar, executable, objectFiles, libraries)
         }
-        val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY || kind == LinkerOutputKind.THIDL
+        val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY || kind == LinkerOutputKind.TAIHE_DYNAMIC
         val crtPrefix = "$absoluteTargetSysRoot/$crtFilesLocation"
         // TODO: Can we extract more to the konan.configurables?
         val command = listOf(Command(absoluteLinker).apply {
@@ -525,7 +525,7 @@ class MingwLinker(targetProperties: MingwConfigurables)
         require(sanitizer == null) {
             "Sanitizers are unsupported"
         }
-        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.THIDL_STATIC)
+        if (kind == LinkerOutputKind.STATIC_LIBRARY || kind == LinkerOutputKind.TAIHE_STATIC)
             return staticGnuArCommands(ar, executable, objectFiles, libraries)
 
         val dynamic = kind == LinkerOutputKind.DYNAMIC_LIBRARY

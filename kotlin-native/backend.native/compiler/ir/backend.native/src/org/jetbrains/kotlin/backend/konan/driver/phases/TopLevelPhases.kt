@@ -116,10 +116,10 @@ internal fun <C : PhaseContext> PhaseEngine<C>.runBackend(backendContext: Contex
                                 def = if (config.target.family == Family.MINGW) outputFiles.cAdapterDef.javaFile() else null,
                         )
                     } else null
-                    val taiheFiles = if (config.produceThIdl) {
+                    val taiheFiles = if (config.produceTaihe) {
                         TaiheFiles(
                                 // api.idl
-                                taiheIdl = outputFiles.thIdl.javaFile()
+                                taiheIdl = outputFiles.taiheFile.javaFile()
                         )
                     } else null
                     // TODO: Make this work if we first compile all the fragments and only after that run the link phases.

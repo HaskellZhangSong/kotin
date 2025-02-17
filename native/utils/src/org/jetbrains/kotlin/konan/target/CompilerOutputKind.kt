@@ -17,11 +17,11 @@ enum class CompilerOutputKind {
         override fun suffix(target: KonanTarget?) = ".${target!!.family.staticSuffix}"
         override fun prefix(target: KonanTarget?) = target!!.family.staticPrefix
     },
-    THIDL {
+    TAIHE_DYNAMIC {
         override fun suffix(target: KonanTarget?) = ".${target!!.family.dynamicSuffix}"
         override fun prefix(target: KonanTarget?) = target!!.family.dynamicPrefix
     },
-    THIDL_STATIC {
+    TAIHE_STATIC {
         override fun suffix(target: KonanTarget?) = ".${target!!.family.staticSuffix}"
         override fun prefix(target: KonanTarget?) = target!!.family.staticPrefix
     },
