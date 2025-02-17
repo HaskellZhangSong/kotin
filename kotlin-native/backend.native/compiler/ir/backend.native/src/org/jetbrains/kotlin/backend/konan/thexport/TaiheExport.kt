@@ -150,7 +150,7 @@ internal class TaiheApiExporter(
             when {
                 it.scope.kind == ScopeKind.PACKAGE && it.isFunction -> {
                     val fd: FunDecl = kotlinFunctionToTaiheFunction(it, true)
-                    output("${fd}\n")
+                    output("${fd.toString(0)}\n")
                     outputStreamWriter.flush()
                 }
                 it.scope.kind == ScopeKind.CLASS && it.isClass -> {
@@ -162,7 +162,7 @@ internal class TaiheApiExporter(
                     val functions = it.scope.elements.filter {it.isFunction}
                     val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
                     val iface = InterfaceDecl(anno, interfaceName, taiheFunc)
-                    output("${iface}")
+                    output("${iface.toString(0)}")
                     outputStreamWriter.flush()
                 }
             }
