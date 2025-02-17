@@ -12,12 +12,13 @@ class Parameter(annotations: Annotations?, val name : String, val type : Type) :
 }
 
 class FunDecl(annotations: Annotations?,
-              val name: String, val parameters : List<Parameter>,
+              val isGlobal: Boolean, val name: String, val parameters : List<Parameter>,
               val retType: Pair<Annotation?, Type>) : Decl(annotations) {
     override fun toString(): String {
         val funAnno = annotations.toString()
         val retAnno = if (retType.first == null) "" else "[${retType.first?.toString()}]"
-        val funStr = "function $name(${parameters.joinToString(", ") { it.toString() }}):${retAnno} ${retType.second};"
+        val funcKW = if (isGlobal) "function " else ""
+        val funStr = "$funcKW$name(${parameters.joinToString(", ") { it.toString() }}):${retAnno} ${retType.second};"
         return if (annotations == null) funStr else listOf(funAnno, funStr).joinToString("\n")
     }
 }

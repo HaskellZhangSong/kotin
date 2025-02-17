@@ -118,7 +118,7 @@ internal class TaiheApiExporter(
             else -> RefType(listOf(), "${ty}")
         }
     }
-    fun kotlinFunctionToTaiheFunction(e: ExportedElement): FunDecl {
+    fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean): FunDecl {
         val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map{ it.toString() }.contains("@ArkTsString")
         val arkTsStringAnnotations = if (containsArkTsString) { listOf(Annotation("ArkTsString", null)) } else { listOf() }
         val anno = listOf(Annotation("inner_name", listOf("\"${e.cname}\""))) + arkTsStringAnnotations
@@ -136,7 +136,7 @@ internal class TaiheApiExporter(
                 .filter { it.type.includeToSignature() }
                 .map { Parameter(null, "${translateName(it.name)}", kotlinTypeToTaiheType(it.type)) })
         val returned = kotlinTypeToTaiheType(original.returnType!!)
-        val fd: FunDecl = FunDecl(anno, "${name}", params, Pair(null, returned))
+        val fd: FunDecl = FunDecl(anno, isGlobal, "${name}", params, Pair(null, returned))
         return fd
     }
 
@@ -149,18 +149,17 @@ internal class TaiheApiExporter(
         scope.elements.forEach {
             when {
                 it.scope.kind == ScopeKind.PACKAGE && it.isFunction -> {
-                    val fd: FunDecl = kotlinFunctionToTaiheFunction(it)
+                    val fd: FunDecl = kotlinFunctionToTaiheFunction(it, true)
                     output("${fd}\n")
                     outputStreamWriter.flush()
                 }
-
                 it.scope.kind == ScopeKind.CLASS && it.isClass -> {
                     val cd = it.declaration as DeserializedClassDescriptor
                     val kind = cd.getKind()
-                    val anno = listOf(Annotation("type", listOf("${kind}".lowercase())))
+                    val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())))
                     val interfaceName = it.name
                     val functions = it.scope.elements.filter {it.isFunction}
-                    val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it) }
+                    val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
                     val iface = InterfaceDecl(anno, interfaceName, taiheFunc)
                     output("${iface}")
                     outputStreamWriter.flush()
