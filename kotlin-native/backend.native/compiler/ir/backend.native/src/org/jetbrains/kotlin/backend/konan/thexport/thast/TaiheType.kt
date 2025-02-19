@@ -41,6 +41,6 @@ object PrimTypes {
 
 class RefType(val scope: List<String>, val typeName : String) : Type() {
     override fun toString(): String {
-        return (if (!scope.isEmpty()) {scope.joinToString(".") + "."} else "") + typeName
+        return (scope + listOf(typeName)).joinToString(".")
     }
 }
