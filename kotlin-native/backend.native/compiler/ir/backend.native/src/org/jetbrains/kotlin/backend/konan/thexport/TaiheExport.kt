@@ -14,14 +14,16 @@ import org.jetbrains.kotlin.backend.konan.thexport.thast.*
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import java.io.PrintWriter
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.backend.konan.*
 import org.jetbrains.kotlin.backend.konan.descriptors.getPackageFragments
 import org.jetbrains.kotlin.backend.konan.driver.phases.PsiToIrContext
 import org.jetbrains.kotlin.config.CompilerConfiguration
-
+import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.util.referenceFunction
+import org.jetbrains.kotlin.ir.util.IdSignature
 import org.jetbrains.kotlin.name.isChildOf
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
@@ -37,6 +39,10 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
+import org.jetbrains.kotlin.ir.symbols.*
+
+internal val kotlinAny: IdSignature.CommonSignature = IdSignature.CommonSignature("kotlin", "Any", null, 0, null)
+
 internal data class TaiheGenerateApiInput(
         val elements: CAdapterExportedElements,
         val taiheFile: File
@@ -161,7 +167,20 @@ internal class TaiheApiExporter(
                     val interfaceName = it.name
                     val functions = it.scope.elements.filter {it.isFunction}
                     val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
-                    val iface = InterfaceDecl(anno, interfaceName, taiheFunc)
+                    val classImpl = it.irSymbol.owner as IrClassImpl
+                    val superTypesList = classImpl.superTypes.map {
+                        val irSimpleType = it as IrSimpleType
+                        val classifier = irSimpleType.classifier as IrClassSymbol
+                        val commonSignature = classifier.signature!!.asPublic()
+                        val superTypePackage = if (commonSignature?.packageFqName!! == ""
+                                                || commonSignature?.packageFqName == "kotlin"
+                                                || commonSignature!!.equals(kotlinAny))
+                                                listOf()
+                                                else commonSignature?.packageFqName?.split(".")!!
+                        val superTypeName = commonSignature?.declarationFqName!!
+                        RefType(superTypePackage, superTypeName)
+                    }.filter { !(it.scope.isEmpty() && it.typeName == "Any") }
+                    val iface = InterfaceDecl(anno, interfaceName, superTypesList, taiheFunc)
                     output("${iface.toString(0)}")
                     outputStreamWriter.flush()
                 }

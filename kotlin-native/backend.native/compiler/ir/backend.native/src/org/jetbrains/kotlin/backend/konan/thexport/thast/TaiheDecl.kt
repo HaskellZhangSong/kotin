@@ -1,5 +1,7 @@
 package org.jetbrains.kotlin.backend.konan.thexport.thast
 
+import org.jetbrains.kotlin.backend.konan.thexport.*
+
 abstract class Decl(val annotations: List<Annotation>?) {
     abstract fun toString(indentLevel: Int): String
 }
@@ -27,11 +29,13 @@ class FunDecl(annotations: Annotations?,
 }
 
 class InterfaceDecl(annotations: Annotations?,
-                val name: String,
-                val functions : List<FunDecl>): Decl(annotations) {
+                    val name: String,
+                    val superTypes: List<Type>,
+                    val functions : List<FunDecl>): Decl(annotations) {
     override fun toString(indentLevel: Int): String {
         val funAnno = annotations.toString()
-        val istr = "interface ${name} {\n${functions.map {it.toString(indentLevel + 1)}.joinToString("\n")}\n}\n"
+        val superTypeString = if (superTypes.isEmpty()) "" else { ": ${superTypes.joinToString(",")}" }
+        val istr = "interface ${name} ${superTypeString} {\n${functions.map {it.toString(indentLevel + 1)}.joinToString("\n")}\n}\n"
         return "${funAnno}\n${istr}"
     }
 }
