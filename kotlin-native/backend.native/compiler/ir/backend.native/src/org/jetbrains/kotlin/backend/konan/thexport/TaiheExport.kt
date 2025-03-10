@@ -120,6 +120,7 @@ internal class TaiheApiExporter(
             isDouble(ty) -> PrimTypes.F64
             isString(ty) -> PrimTypes.STRING
             isUnit(ty) -> PrimTypes.VOID
+            isBoolean(ty) -> PrimTypes.BOOL
             KotlinPointerTypeUtils.isCPointerType(ty) -> PrimTypes.CPOINTER
             else -> RefType(listOf(), "${ty}")
         }
