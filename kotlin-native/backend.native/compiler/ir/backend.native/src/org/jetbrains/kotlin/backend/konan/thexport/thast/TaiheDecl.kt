@@ -23,7 +23,8 @@ class FunDecl(annotations: Annotations?,
         val funAnno = " ".repeat(indentLevel*2) + annotations.toString()
         val retAnno = if (retType.first == null) "" else "[${retType.first?.toString()}]"
         val funcKW = if (isGlobal) "function " else ""
-        val funStr = " ".repeat(indentLevel*2) + "$funcKW$name(${parameters.joinToString(", ") { it.toString() }}):${retAnno} ${retType.second};"
+        val funStr = if (isGlobal) " ".repeat(indentLevel*2) + "$funcKW$name(${parameters.joinToString(", ") { it.toString() }}):${retAnno} ${retType.second};"
+                     else          " ".repeat(indentLevel*2) + "$funcKW$name(${parameters.drop(1).joinToString(", ") { it.toString() }}):${retAnno} ${retType.second};"
         return if (annotations == null) funStr else listOf(funAnno, funStr).joinToString("\n")
     }
 }
