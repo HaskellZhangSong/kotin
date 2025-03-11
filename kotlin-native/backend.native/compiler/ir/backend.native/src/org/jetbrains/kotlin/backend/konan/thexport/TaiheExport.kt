@@ -4,6 +4,7 @@
  */
 
 package org.jetbrains.kotlin.backend.konan.thexport
+
 import org.jetbrains.kotlin.backend.konan.thexport.*
 import java.io.File
 import org.jetbrains.kotlin.backend.konan.cexport.CAdapterExportedElements
@@ -112,7 +113,7 @@ internal class TaiheApiExporter(
             isShort(ty) -> PrimTypes.I16
             isInt(ty) -> PrimTypes.I32
             isLong(ty) -> PrimTypes.I64
-            isUByte(ty) ->  PrimTypes.U8
+            isUByte(ty) -> PrimTypes.U8
             isUShort(ty) -> PrimTypes.U16
             isUInt(ty) -> PrimTypes.U32
             isULong(ty) -> PrimTypes.U64
@@ -125,9 +126,14 @@ internal class TaiheApiExporter(
             else -> RefType(listOf(), "${ty}")
         }
     }
+
     fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean): FunDecl {
-        val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map{ it.toString() }.contains("@ArkTsString")
-        val arkTsStringAnnotations = if (containsArkTsString) { listOf(Annotation("ArkTsString", null)) } else { listOf() }
+        val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map { it.toString() }.contains("@ArkTsString")
+        val arkTsStringAnnotations = if (containsArkTsString) {
+            listOf(Annotation("ArkTsString", null))
+        } else {
+            listOf()
+        }
         val anno = listOf(Annotation("inner_name", listOf("\"${e.cname}\""))) + arkTsStringAnnotations
         val original = e.declaration.original as FunctionDescriptor
         val descriptor = e.declaration.original
@@ -153,45 +159,55 @@ internal class TaiheApiExporter(
         scope.scopes.forEach {
             makeScopeDefinitions(it)
         }
-        scope.elements.forEach {
-            when {
-                it.scope.kind == ScopeKind.PACKAGE && it.isFunction -> {
-                    val fd: FunDecl = kotlinFunctionToTaiheFunction(it, true)
-                    output("${fd.toString(0)}\n")
-                    outputStreamWriter.flush()
+        scope.elements
+                .filter {
+                    var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
+                    annoList.contains("@ArkTsExportFunctionTaihe") || annoList.contains("@ArkTsExportClassTaihe")
                 }
-                it.scope.kind == ScopeKind.CLASS && it.isClass -> {
-                    val cd = it.declaration as DeserializedClassDescriptor
-                    val kind = cd.getKind()
-                    val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
-                                      Annotation("type_function", listOf("\"${it.cname}_type\"")))
-                    val interfaceName = it.name
-                    val functions = it.scope.elements.filter {it.isFunction}
-                    val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
-                    val classImpl = it.irSymbol.owner as IrClassImpl
-                    val superTypesList = classImpl.superTypes.map {
-                        val irSimpleType = it as IrSimpleType
-                        val classifier = irSimpleType.classifier as IrClassSymbol
-                        val commonSignature = classifier.signature!!.asPublic()
-                        val superTypePackage = if (commonSignature?.packageFqName!! == ""
-                                                || commonSignature?.packageFqName == "kotlin"
-                                                || commonSignature!!.equals(kotlinAny))
-                                                listOf()
-                                                else commonSignature?.packageFqName?.split(".")!!
-                        val superTypeName = commonSignature?.declarationFqName!!
-                        RefType(superTypePackage, superTypeName)
-                    }.filter { !(it.scope.isEmpty() && it.typeName == "Any") }
-                    val iface = InterfaceDecl(anno, interfaceName, superTypesList, taiheFunc)
-                    output("${iface.toString(0)}")
-                    outputStreamWriter.flush()
+                .forEach {
+                    when {
+                        it.scope.kind == ScopeKind.PACKAGE && it.isFunction -> {
+                            val fd: FunDecl = kotlinFunctionToTaiheFunction(it, true)
+                            output("${fd.toString(0)}\n")
+                            outputStreamWriter.flush()
+                        }
+                        it.scope.kind == ScopeKind.CLASS && it.isClass -> {
+                            val cd = it.declaration as DeserializedClassDescriptor
+                            val kind = cd.getKind()
+                            val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
+                                    Annotation("type_function", listOf("\"${it.cname}_type\"")))
+                            val interfaceName = it.name
+                            val functions = it.scope.elements.filter {
+                                var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
+                                it.isFunction && annoList.contains("@ArkTsExportFunctionTaihe")
+                            }
+                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
+                            val classImpl = it.irSymbol.owner as IrClassImpl
+                            val superTypesList = classImpl.superTypes.map {
+                                val irSimpleType = it as IrSimpleType
+                                val classifier = irSimpleType.classifier as IrClassSymbol
+                                val commonSignature = classifier.signature!!.asPublic()
+                                val superTypePackage = if (commonSignature?.packageFqName!! == ""
+                                        || commonSignature?.packageFqName == "kotlin"
+                                        || commonSignature!!.equals(kotlinAny))
+                                    listOf()
+                                else commonSignature?.packageFqName?.split(".")!!
+                                val superTypeName = commonSignature?.declarationFqName!!
+                                RefType(superTypePackage, superTypeName)
+                            }.filter { !(it.scope.isEmpty() && it.typeName == "Any") }
+                            val iface = InterfaceDecl(anno, interfaceName, superTypesList, taiheFunc)
+                            output("${iface.toString(0)}")
+                            outputStreamWriter.flush()
+                        }
+                    }
                 }
-            }
-        }
     }
+
     fun makePrefixAnnotation() {
         output("[prefix(\"${prefix}\")]")
         outputStreamWriter.flush()
     }
+
     fun makeIDL() {
         makeGlobalTaiheDecl()
         makePrefixAnnotation()
@@ -201,8 +217,7 @@ internal class TaiheApiExporter(
 internal val TaiheGenerateApiPhase = createSimpleNamedCompilerPhase<PhaseContext, TaiheGenerateApiInput>(
         name = "TaiheExportGenerateApi",
         description = "Create Taihe idl file for the exported API"
-) {
-    context, input ->
+) { context, input ->
     val prefix = context.config.fullExportedNamePrefix.replace("-|\\.".toRegex(), "_")
     TaiheApiExporter(prefix = prefix, elements = input.elements, input.taiheFile).makeIDL()
 }
