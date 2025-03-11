@@ -179,8 +179,10 @@ internal class TaiheApiExporter(
                             val interfaceName = it.name
                             val functions = it.scope.elements.filter {
                                 var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
-                                it.isFunction && annoList.contains("@ArkTsExportFunctionTaihe")
-                            }
+                                it.isFunction && annoList.contains("@ArkTsExportFunctionTaihe") }.filter {
+                                    var funDec = it.declaration as DeserializedSimpleFunctionDescriptor
+                                    funDec.getOverriddenDescriptors().size == 0
+                                }
                             val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
                             val classImpl = it.irSymbol.owner as IrClassImpl
                             val superTypesList = classImpl.superTypes.map {
