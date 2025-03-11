@@ -127,18 +127,23 @@ internal class TaiheApiExporter(
         }
     }
 
-    fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean): FunDecl {
+    fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean, belongClass : String? = null): FunDecl {
         val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map { it.toString() }.contains("@ArkTsString")
         val arkTsStringAnnotations = if (containsArkTsString) {
             listOf(Annotation("ArkTsString", null))
         } else {
             listOf()
         }
-        val anno = listOf(Annotation("inner_name", listOf("\"${e.cname}\""))) + arkTsStringAnnotations
+        val constrAnnotations = if (belongClass != null) {
+            listOf(Annotation("constructor", null))
+        } else {
+            listOf()
+        }
+        val anno = listOf(Annotation("inner_name", listOf("\"${e.cname}\""))) + arkTsStringAnnotations + constrAnnotations
         val original = e.declaration.original as FunctionDescriptor
         val descriptor = e.declaration.original
         val name = when (descriptor) {
-            is ConstructorDescriptor -> "init"
+            is ConstructorDescriptor -> "make_" + belongClass
             is PropertyGetterDescriptor -> "get_${descriptor.correspondingProperty.name.asString()}"
             is PropertySetterDescriptor -> "set_${descriptor.correspondingProperty.name.asString()}"
             is FunctionDescriptor -> e.declaration.name
@@ -172,6 +177,7 @@ internal class TaiheApiExporter(
                             outputStreamWriter.flush()
                         }
                         it.scope.kind == ScopeKind.CLASS && it.isClass -> {
+                            val initFunction = null;
                             val cd = it.declaration as DeserializedClassDescriptor
                             val kind = cd.getKind()
                             val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
@@ -183,7 +189,12 @@ internal class TaiheApiExporter(
                                     var funDec = it.declaration as DeserializedSimpleFunctionDescriptor
                                     funDec.getOverriddenDescriptors().size == 0
                                 }
-                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
+                            val constructors : List<ExportedElement> = it.scope.elements.filter {
+                                it.name == "<init>"
+                            }
+                            val taiheConstructors = constructors.map { func -> kotlinFunctionToTaiheFunction(func, true, it.name) }
+
+                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false, ) }
                             val classImpl = it.irSymbol.owner as IrClassImpl
                             val superTypesList = classImpl.superTypes.map {
                                 val irSimpleType = it as IrSimpleType
@@ -199,6 +210,7 @@ internal class TaiheApiExporter(
                             }.filter { !(it.scope.isEmpty() && it.typeName == "Any") }
                             val iface = InterfaceDecl(anno, interfaceName, superTypesList, taiheFunc)
                             output("${iface.toString(0)}")
+                            output(taiheConstructors.map{ it.toString(0) }.joinToString("\n"))
                             outputStreamWriter.flush()
                         }
                     }
