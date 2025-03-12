@@ -185,9 +185,13 @@ internal class TaiheApiExporter(
                             val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
                                     Annotation("type_function", listOf("\"${it.cname}_type\"")))
                             val interfaceName = it.name
+                            val propGetterSetters = it.scope.elements.filter {
+                                it.name.startsWith("<get") || it.name.startsWith("<set")
+                            }
+
                             val functions = it.scope.elements.filter {
                                 var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
-                                it.isFunction && annoList.contains("@ArkTsExportFunctionTaihe")
+                                (it.isFunction && annoList.contains("@ArkTsExportTaihe"))
                             }.filter {
                                 var funDec = it.declaration as DeserializedSimpleFunctionDescriptor
                                 funDec.getOverriddenDescriptors().size == 0
@@ -195,8 +199,9 @@ internal class TaiheApiExporter(
                             val constructors: List<ExportedElement> = it.scope.elements.filter {
                                 it.name == "<init>"
                             }
+                            val taihePropGetterSetters = propGetterSetters.map { func -> kotlinFunctionToTaiheFunction(func, false) }
                             val taiheConstructors = constructors.map { func -> kotlinFunctionToTaiheFunction(func, true, it.name, cd.getKind()) }
-                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) }
+                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false) } + taihePropGetterSetters
                             val classImpl = it.irSymbol.owner as IrClassImpl
                             val superTypesList = classImpl.superTypes.map {
                                 val irSimpleType = it as IrSimpleType
