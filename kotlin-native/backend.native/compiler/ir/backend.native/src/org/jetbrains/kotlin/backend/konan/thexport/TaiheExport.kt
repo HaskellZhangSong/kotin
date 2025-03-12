@@ -41,6 +41,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.*
 import org.jetbrains.kotlin.ir.symbols.*
+import org.jetbrains.kotlin.descriptors.*
+
 
 internal val kotlinAny: IdSignature.CommonSignature = IdSignature.CommonSignature("kotlin", "Any", null, 0, null)
 
@@ -127,15 +129,15 @@ internal class TaiheApiExporter(
         }
     }
 
-    fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean, belongClass : String? = null): FunDecl {
+    fun kotlinFunctionToTaiheFunction(e: ExportedElement, isGlobal: Boolean, belongClass : String? = null, typeKind: ClassKind? = null): FunDecl {
         val containsArkTsString: Boolean = e.declaration.annotations.iterator().asSequence().toList().map { it.toString() }.contains("@ArkTsString")
         val arkTsStringAnnotations = if (containsArkTsString) {
-            listOf(Annotation("ArkTsString", null))
+            listOf(Annotation("ArkTsString"))
         } else {
             listOf()
         }
         val constrAnnotations = if (belongClass != null) {
-            listOf(Annotation("constructor", null))
+            listOf(Annotation("constructor"), Annotation(typeKind.toString()))
         } else {
             listOf()
         }
@@ -192,9 +194,8 @@ internal class TaiheApiExporter(
                             val constructors : List<ExportedElement> = it.scope.elements.filter {
                                 it.name == "<init>"
                             }
-                            val taiheConstructors = constructors.map { func -> kotlinFunctionToTaiheFunction(func, true, it.name) }
-
-                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false, ) }
+                            val taiheConstructors = constructors.map { func -> kotlinFunctionToTaiheFunction(func, true, it.name, cd.getKind()) }
+                            val taiheFunc = functions.map { kotlinFunctionToTaiheFunction(it, false ) }
                             val classImpl = it.irSymbol.owner as IrClassImpl
                             val superTypesList = classImpl.superTypes.map {
                                 val irSimpleType = it as IrSimpleType
@@ -211,6 +212,13 @@ internal class TaiheApiExporter(
                             val iface = InterfaceDecl(anno, interfaceName, superTypesList, taiheFunc)
                             output("${iface.toString(0)}")
                             output(taiheConstructors.map{ it.toString(0) }.joinToString("\n"))
+
+                            if (cd.getKind().isSingleton) {
+                                val instanceFunName : String = it.scope.elements[0].cname + "_instance"
+                                val annos = listOf(Annotation("inner_name", listOf("\"${instanceFunName}\"")), Annotation("singleton"))
+                                val taiheInstanceFun = FunDecl(annos, true, "instance_" + interfaceName, listOf(), Pair(null, RefType(listOf(), interfaceName)))
+                                output(taiheInstanceFun.toString(0))
+                            }
                             outputStreamWriter.flush()
                         }
                     }

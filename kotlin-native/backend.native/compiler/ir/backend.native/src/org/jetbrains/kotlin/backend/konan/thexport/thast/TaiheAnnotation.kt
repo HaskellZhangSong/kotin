@@ -2,7 +2,7 @@ package org.jetbrains.kotlin.backend.konan.thexport.thast
 
 import java.util.Optional
 
-class Annotation(val ident: String, val args: List<String>?) {
+class Annotation(val ident: String, val args: List<String>? = null) {
     override fun toString(): String {
         return if (args == null) {
             ident
