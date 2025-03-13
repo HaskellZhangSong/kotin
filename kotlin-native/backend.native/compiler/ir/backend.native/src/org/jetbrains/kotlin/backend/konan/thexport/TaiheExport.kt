@@ -182,9 +182,16 @@ internal class TaiheApiExporter(
                             val initFunction = null;
                             val cd = it.declaration as DeserializedClassDescriptor
                             val kind = cd.getKind()
+                            val namePrefix: String = if (cd.isCompanionObject) {
+                                val containingClassDecl = cd.containingDeclaration as? DeserializedClassDescriptor
+                                if (containingClassDecl != null) {
+                                    containingClassDecl!!.name.toString() + "_"
+                                } else ""
+                            } else ""
+                            val interfaceName = namePrefix + it.name
                             val anno = listOf(Annotation("object_kind", listOf("\"${kind}\"".lowercase())),
                                     Annotation("type_function", listOf("\"${it.cname}_type\"")))
-                            val interfaceName = it.name
+
                             val propGetterSetters = it.scope.elements.filter {
                                 it.name.startsWith("<get") || it.name.startsWith("<set")
                             }
