@@ -39,13 +39,14 @@ internal class CAdapterCodegen(
     }
 
     private fun buildCAdapter(exportedElement: ExportedElement): Unit = with(exportedElement) {
+        val outputPrefix: String = this.typeTranslator.prefix
         when {
             isFunction -> {
                 val function = declaration as FunctionDescriptor
                 val irFunction = irSymbol.owner.let {
                     it as? IrSimpleFunction ?: context.getLoweredConstructorFunction(it as IrConstructor)
                 }
-                cname = "_konan_function_${owner.nextFunctionIndex()}"
+                cname = "_" + outputPrefix + "_konan_function_${owner.nextFunctionIndex()}"
                 val signature = LlvmFunctionSignature(irFunction, this@CAdapterCodegen)
                 val bridgeFunctionProto = signature.toProto(cname, null, LLVMLinkage.LLVMExternalLinkage)
                 // If function is virtual, we need to resolve receiver properly.
@@ -65,7 +66,7 @@ internal class CAdapterCodegen(
             }
             isClass -> {
                 val irClass = irSymbol.owner as IrClass
-                cname = "_konan_function_${owner.nextFunctionIndex()}"
+                cname =  "_" + outputPrefix + "_konan_function_${owner.nextFunctionIndex()}"
                 // Produce type getter.
                 val getTypeFunction = kGetTypeFuncType.toProto(
                         "${cname}_type",
@@ -99,7 +100,7 @@ internal class CAdapterCodegen(
             }
             isEnumEntry -> {
                 // Produce entry getter.
-                cname = "_konan_function_${owner.nextFunctionIndex()}"
+                cname = "_" + outputPrefix + "_konan_function_${owner.nextFunctionIndex()}"
                 val functionProto = kGetObjectFuncType.toProto(
                         cname,
                         null,
