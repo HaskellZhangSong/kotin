@@ -169,7 +169,8 @@ internal class TaiheApiExporter(
         scope.elements
                 .filter {
                     var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
-                    annoList.contains("@ArkTsExportFunctionTaihe") || annoList.contains("@ArkTsExportClassTaihe")
+                    annoList.contains("@ArkTsExportFunctionTaihe") || annoList.contains("@ArkTsExportClassTaihe") ||
+                            it.name.startsWith("<get") || it.name.startsWith("<set")
                 }
                 .forEach {
                     when {
