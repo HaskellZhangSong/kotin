@@ -124,6 +124,7 @@ internal class TaiheApiExporter(
             isString(ty) -> PrimTypes.STRING
             isUnit(ty) -> PrimTypes.VOID
             isBoolean(ty) -> PrimTypes.BOOL
+            isPrimitiveTypeOrNullablePrimitiveType(ty) -> makeBoxType(kotlinTypeToTaiheType(TypeUtils.makeNullableAsSpecified(ty, false)))
             KotlinPointerTypeUtils.isCPointerType(ty) -> PrimTypes.CPOINTER
             else -> RefType(listOf(), "${ty}")
         }

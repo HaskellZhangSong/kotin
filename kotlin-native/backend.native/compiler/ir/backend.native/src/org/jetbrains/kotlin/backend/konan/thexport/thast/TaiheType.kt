@@ -44,3 +44,13 @@ class RefType(val scope: List<String>, val typeName : String) : Type() {
         return (scope + listOf(typeName)).joinToString(".")
     }
 }
+
+class AppType(val con: Type, val args: List<Type>): Type() {
+    override fun toString(): String {
+        return con.toString() + "<" + args.map { it.toString() }.joinToString(", ") + ">"
+    }
+}
+
+fun makeBoxType(arg: Type): AppType {
+    return AppType(RefType(listOf(), "Box"), listOf(arg))
+}
