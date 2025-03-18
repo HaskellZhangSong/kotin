@@ -170,7 +170,8 @@ internal class TaiheApiExporter(
         scope.elements
                 .filter {
                     var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
-                    annoList.contains("@ArkTsExportFunctionTaihe") || annoList.contains("@ArkTsExportClassTaihe") ||
+                    annoList.any { it.split("@|\\.".toRegex()).last() == "ArkTsExportFunctionTaihe" } ||
+                            annoList.any { it.split("@|\\.".toRegex()).last() == "ArkTsExportClassTaihe" } ||
                             it.name.startsWith("<get") || it.name.startsWith("<set")
                 }
                 .forEach {
@@ -200,7 +201,7 @@ internal class TaiheApiExporter(
 
                             val functions = it.scope.elements.filter {
                                 var annoList = it.declaration.annotations.iterator().asSequence().toList().map { it.toString() }
-                                (it.isFunction && annoList.contains("@ArkTsExportTaihe"))
+                                (it.isFunction && annoList.any { it.split("@|\\.".toRegex()).last() == "ArkTsExportTaihe" })
                             }.filter {
                                 var funDec = it.declaration as DeserializedSimpleFunctionDescriptor
                                 funDec.getOverriddenDescriptors().size == 0
