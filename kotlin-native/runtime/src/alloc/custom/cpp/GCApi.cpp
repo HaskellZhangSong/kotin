@@ -25,11 +25,16 @@
 #include "GCStatistics.hpp"
 #include "KAssert.h"
 #include "Memory.h"
+#include "MmapAllocator.hpp"
 
+#define POINTER_COMPRESSION 1
 namespace {
-
+// TODO this is not needed for POINTER_COMPRESSION, since we can get it with heapEnd - heapBase
 std::atomic<size_t> allocatedBytesCounter;
-
+#ifdef POINTER_COMPRESSION
+uintptr_t heapBase = 256 * MB;
+MmapAllocator mmapAllocator{heapBase};
+#endif
 }
 
 namespace kotlin::alloc {
@@ -92,6 +97,24 @@ bool SweepExtraObject(mm::ExtraObjectData* extraObject, gc::GCHandle::GCSweepExt
     return true;
 }
 
+#ifdef POINTER_COMPRESSION
+void* SafeAlloc(uint64_t size) noexcept {
+    if (size > maxHeapSize) {
+        konan::consoleErrorf("Out of memory trying to allocate %" PRIu64 "bytes. Aborting.\n", size);
+        std::abort();
+    }
+    void* memory;
+    if (compiler::disableMmap()) {
+        konan::consoleErrorf("Cannot use mmap to allocate.");
+        std::abort();
+    } else {
+        memory = MmapAllocator::ToPtr(mmapAllocator.Allocate(size)) ;
+    }
+    allocatedBytesCounter.fetch_add(static_cast<size_t>(size), std::memory_order_relaxed);
+    CustomAllocDebug("SafeAlloc(%zu) = %p", static_cast<size_t>(size), memory);
+    return memory;
+}
+#else
 void* SafeAlloc(uint64_t size) noexcept {
     if (size > std::numeric_limits<size_t>::max()) {
         konan::consoleErrorf("Out of memory trying to allocate %" PRIu64 "bytes. Aborting.\n", size);
@@ -121,7 +144,24 @@ void* SafeAlloc(uint64_t size) noexcept {
     CustomAllocDebug("SafeAlloc(%zu) = %p", static_cast<size_t>(size), memory);
     return memory;
 }
+#endif
 
+#ifdef POINTER_COMPRESSION
+void Free(void* ptr, size_t size) noexcept {
+    CustomAllocDebug("Free(%p, %zu)", ptr, size);
+    if (compiler::disableMmap()) {
+        konan::consoleErrorf("Cannot use mmap to allocate.");
+        std::abort();
+    } else {
+#if KONAN_WINDOWS
+        RuntimeFail("mmap is not available on mingw");
+#else
+        mmapAllocator.Deallocate(ptr);
+#endif
+    }
+    allocatedBytesCounter.fetch_sub(static_cast<size_t>(size), std::memory_order_relaxed);
+}
+#else
 void Free(void* ptr, size_t size) noexcept {
     CustomAllocDebug("Free(%p, %zu)", ptr, size);
     if (compiler::disableMmap()) {
@@ -136,6 +176,8 @@ void Free(void* ptr, size_t size) noexcept {
     }
     allocatedBytesCounter.fetch_sub(static_cast<size_t>(size), std::memory_order_relaxed);
 }
+#endif
+
 
 size_t GetAllocatedBytes() noexcept {
     return allocatedBytesCounter.load(std::memory_order_relaxed);
