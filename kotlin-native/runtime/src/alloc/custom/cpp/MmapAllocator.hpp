@@ -1,3 +1,4 @@
+#ifdef KONAN_OHOS
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -24,9 +25,9 @@ using Size32_t = uint32_t;
 
 #define PTR32_NULL (0x0)
 
-constexpr size_t maxHeapSize = size_t{1} << 32; // 0x0000000100000000
-constexpr size_t heapMask = ~(maxHeapSize - 1); // 0xFFFFFFFF00000000
-constexpr size_t heapAddressMask = maxHeapSize - 1; // 0x00000000FFFFFFFF
+constexpr size_t maxHeapSize = 0x0000000100000000;
+constexpr size_t heapMask = 0xFFFFFFFF00000000;
+constexpr size_t heapAddressMask = 0x00000000FFFFFFFF;
 
 class MmapAllocator {
 private:
@@ -62,3 +63,4 @@ public:
         return ptr32 == PTR32_NULL;
     }
 };
+#endif // KONAN_OHOS

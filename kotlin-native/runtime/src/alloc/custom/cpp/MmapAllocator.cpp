@@ -1,8 +1,7 @@
+#ifdef KONAN_OHOS
 #include <MmapAllocator.hpp>
 #include "Porting.h"
-#ifndef KONAN_WINDOWS
 #include <sys/mman.h>
-#endif
 #include <KAssert.h>
 #include <errno.h>
 #include <string.h>
@@ -125,3 +124,4 @@ uintptr_t MmapAllocator::GetHeapBase() {
 Ptr32_t MmapAllocator::GetHeapEnd() {
     return heapEnd.load();
 }
+#endif // KONAN_OHOS
