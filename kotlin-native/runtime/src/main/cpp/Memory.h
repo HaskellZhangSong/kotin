@@ -19,7 +19,7 @@
 
 #include <utility>
 #include <std_support/Atomic.hpp>
-
+#include <cstdint>
 #include "Alignment.hpp"
 #include "KAssert.h"
 #include "Common.h"
@@ -27,6 +27,7 @@
 #include "PointerBits.h"
 #include "Utils.hpp"
 
+using Ptr32 = std::uint32_t;
 typedef enum {
   // Must match to permTag() in Kotlin.
   OBJECT_TAG_PERMANENT_CONTAINER = 1 << 0,
@@ -221,6 +222,7 @@ void ZeroStackRef(ObjHeader** location) RUNTIME_NOTHROW;
 void UpdateStackRef(ObjHeader** location, const ObjHeader* object) RUNTIME_NOTHROW;
 // Updates heap/static data location.
 void UpdateHeapRef(ObjHeader** location, const ObjHeader* object) RUNTIME_NOTHROW;
+void UpdateHeapRef32(Ptr32* location, const Ptr32 object) RUNTIME_NOTHROW;
 // Updates volatile heap/static data location.
 void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object) RUNTIME_NOTHROW;
 OBJ_GETTER(CompareAndSwapVolatileHeapRef, ObjHeader** location, ObjHeader* expectedValue, ObjHeader* newValue) RUNTIME_NOTHROW;

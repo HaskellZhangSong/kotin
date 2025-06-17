@@ -18,6 +18,7 @@
 #include "ObjectOps.hpp"
 #include "Porting.h"
 #include "ReferenceOps.hpp"
+#include "ReferenceOps32.hpp"
 #include "Runtime.h"
 #include "SafePoint.hpp"
 #include "SpecialRefRegistry.hpp"
@@ -157,9 +158,17 @@ extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateHeapRef(ObjHeader** loc
     mm::RefAccessor<false>{location} = const_cast<ObjHeader*>(object);
 }
 
+extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateHeapRef32(mm::Ptr32* location, const mm::Ptr32 object) {
+    mm::RefAccessor32<false>{location} = object;
+}
+
 extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef(ObjHeader** location, const ObjHeader* object) {
     mm::RefAccessor<false>{location}.storeAtomic(const_cast<ObjHeader*>(object), std::memory_order_seq_cst);
 }
+
+//extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW void UpdateVolatileHeapRef32(mm::Ptr32* location, const mm::Ptr32 object) {
+//    mm::RefAccessor32<false>{location}.storeAtomic(object, std::memory_order_seq_cst);
+//}
 
 extern "C" PERFORMANCE_INLINE RUNTIME_NOTHROW OBJ_GETTER(CompareAndSwapVolatileHeapRef, ObjHeader** location, ObjHeader* expectedValue, ObjHeader* newValue) {
     ObjHeader* actual = expectedValue;
