@@ -37,6 +37,11 @@ enum class UniqueKind(val llvmName: String) {
     EMPTY_ARRAY("theEmptyArray")
 }
 
+enum class FieldReferencibility {
+    PRIMITIVE,
+    REFERENCE
+}
+
 internal class LlvmDeclarations(private val unique: Map<UniqueKind, UniqueLlvmDeclarations>) {
     fun forFunction(function: IrSimpleFunction): LlvmCallable =
             forFunctionOrNull(function) ?: with(function) {
@@ -105,6 +110,9 @@ private fun ContextUtils.createClassBody(name: String, fields: List<ClassLayoutB
         }
         addAndCount(runtime.objHeaderType)
         for (field in fields) {
+            if (field.isPointerCompressed == true) {
+                val fda = "hah"
+            }
             if (packed) {
                 val offset = (currentOffset % field.alignment).toInt()
                 if (offset != 0) {
@@ -118,6 +126,8 @@ private fun ContextUtils.createClassBody(name: String, fields: List<ClassLayoutB
         }
     }
     LLVMStructSetBody(classType, fieldTypes.toCValues(), fieldTypes.size, if (packed) 1 else 0)
+    // LLVMDumpType(classType);
+    // println()
 
     context.logMultiple {
         +"$name has following fields:"
@@ -248,10 +258,17 @@ private class DeclarationsGeneratorVisitor(override val generationState: NativeG
         packedFields.sortBy { it.offset }
         return packedFields.map { it.field }
     }
-
+    private fun getFieldReferencibility(field: ClassLayoutBuilder.FieldInfo): FieldReferencibility {
+        return when {
+            field.type.binaryTypeIsReference() -> FieldReferencibility.REFERENCE
+            else -> FieldReferencibility.PRIMITIVE
+        }
+    }
     private fun createClassDeclarations(declaration: IrClass): ClassLlvmDeclarations {
         val internalName = qualifyInternalName(declaration)
-
+        if (internalName.toString().contains("Person")) {
+            val dsa = "haha"
+        }
         val fields =
             if (context.config.packFields)
                 packFields(declaration)
@@ -270,7 +287,6 @@ private class DeclarationsGeneratorVisitor(override val generationState: NativeG
         require(alignment == runtime.objectAlignment) {
             "Over-aligned objects are not supported yet: expected alignment for ${declaration.fqNameWhenAvailable} is $alignment"
         }
-
 
         val typeInfoPtr: ConstPointer
         val typeInfoGlobal: StaticData.Global

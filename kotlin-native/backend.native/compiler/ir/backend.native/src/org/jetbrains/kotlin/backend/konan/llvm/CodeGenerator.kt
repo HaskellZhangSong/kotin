@@ -743,9 +743,9 @@ internal abstract class FunctionGenerationContext(
         updateRef(value, ptr, onStack = true)
     }
 
-    fun storeAny(value: LLVMValueRef, ptr: LLVMValueRef, isObjectRef: Boolean, onStack: Boolean, isVolatile: Boolean = false, alignment: Int? = null) {
+    fun storeAny(value: LLVMValueRef, ptr: LLVMValueRef, isObjectRef: Boolean, onStack: Boolean, isVolatile: Boolean = false, alignment: Int? = null, isPointerCompressed: Boolean = false) {
         when {
-            isObjectRef -> updateRef(value, ptr, onStack, isVolatile, alignment)
+            isObjectRef -> updateRef(value, ptr, onStack, isVolatile, alignment, isPointerCompressed)
             else -> store(value, ptr, if (isVolatile) LLVMAtomicOrdering.LLVMAtomicOrderingSequentiallyConsistent else null, alignment)
         }
     }
@@ -755,7 +755,8 @@ internal abstract class FunctionGenerationContext(
     }
 
     private fun updateRef(value: LLVMValueRef, address: LLVMValueRef, onStack: Boolean,
-                          isVolatile: Boolean = false, alignment: Int? = null) {
+                          isVolatile: Boolean = false, alignment: Int? = null,
+                          isPointerCompressed: Boolean = false) {
         require(alignment == null || alignment % runtime.pointerAlignment == 0)
         if (onStack) {
             require(!isVolatile) { "Stack ref update can't be volatile"}
@@ -764,7 +765,13 @@ internal abstract class FunctionGenerationContext(
             if (isVolatile) {
                 call(llvm.UpdateVolatileHeapRef, listOf(address, value))
             } else {
-                call(llvm.updateHeapRefFunction, listOf(address, value))
+                if (!isPointerCompressed) {
+                    call(llvm.updateHeapRefFunction, listOf(address, value))
+                } else {
+                    // change value into i32 type
+
+                    call(llvm.updateHeapRef32Function, listOf(address, value))
+                }
             }
         }
     }

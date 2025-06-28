@@ -26,10 +26,12 @@ import org.jetbrains.kotlin.ir.objcinterop.isKotlinObjCClass
 import org.jetbrains.kotlin.ir.objcinterop.isObjCClassMethod
 import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 
 internal class OverriddenFunctionInfo(
         val function: IrSimpleFunction,
@@ -291,7 +293,20 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
     private fun IrField.toFieldInfo(llvm: CodegenLlvmHelpers): FieldInfo {
         val isConst = correspondingPropertySymbol?.owner?.isConst ?: false
         require(!isConst || initializer?.expression is IrConst) { "A const val field ${render()} must have constant initializer" }
-        return FieldInfo(name.asString(), type, isConst, symbol, requiredAlignment(llvm))
+        if (irClass.name.asString() == "Person") {
+            val fdsa = "hah"
+        }
+        if (irClass is IrClassImpl && irClass.isPointerCompressed) {
+            val irClassImpl = irClass as IrClassImpl
+            if (this.type.binaryTypeIsReference() && irClassImpl.isPointerCompressed) {
+                val irFieldImpl = this as IrFieldImpl
+                irFieldImpl.isPointerCompressed = true
+                return FieldInfo(name.asString(), context.irBuiltIns.intType, isConst, symbol, 4, true)
+            }
+            return FieldInfo(name.asString(), type, isConst, symbol, requiredAlignment(llvm))
+        } else {
+            return FieldInfo(name.asString(), type, isConst, symbol, requiredAlignment(llvm))
+        }
     }
 
     val vtableEntries: List<OverriddenFunctionInfo> by lazy {
@@ -437,9 +452,12 @@ internal class ClassLayoutBuilder(val irClass: IrClass, val context: Context) {
         return context.getLayoutBuilder(superFunction.parentAsClass).itablePlace(superFunction)
     }
 
-    class FieldInfo(val name: String, val type: IrType, val isConst: Boolean, val irFieldSymbol: IrFieldSymbol, val alignment: Int) {
+    class FieldInfo(val name: String, val type: IrType, val isConst: Boolean,
+                    val irFieldSymbol: IrFieldSymbol, val alignment: Int,
+                    val isPointerCompressed: Boolean = false) {
         val irField: IrField?
             get() = if (irFieldSymbol.isBound) irFieldSymbol.owner else null
+
         init {
             require(alignment.countOneBits() == 1) { "Alignment should be power of 2" }
         }

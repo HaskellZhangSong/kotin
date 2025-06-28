@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.objcinterop.*
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
+import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -613,7 +614,18 @@ internal class CodeGeneratorVisitor(
         }
 
         override fun genGetValue(value: IrValueDeclaration, resultSlot: LLVMValueRef?): LLVMValueRef {
+            if ("${ir2string(value)}".contains("Person")) {
+                println("genGetValue: ${ir2string(value)}")
+                // This is a local variable or a parameter.
+                val a = "abc"
+            }
             val index = functionGenerationContext.vars.indexOf(value)
+            if ("${ir2string(value)}".contains("Person")) {
+                println("person index: ${index}")
+            }
+            if ("${ir2string(value)}".contains("namek")) {
+                println("namek index: ${index}")
+            }
             if (index < 0) {
                 return super.genGetValue(value, resultSlot)
             } else {
@@ -649,6 +661,10 @@ internal class CodeGeneratorVisitor(
 
         override fun genGetValue(value: IrValueDeclaration, resultSlot: LLVMValueRef?): LLVMValueRef {
             val index = functionGenerationContext.vars.indexOf(value)
+            if ("${ir2string(value)}".contains("Person")) {
+                // This is a local variable or a parameter.
+                val a = "abc"
+            }
             if (index < 0) {
                 return super.genGetValue(value, resultSlot)
             } else {
@@ -796,6 +812,9 @@ internal class CodeGeneratorVisitor(
                 else -> return@run null
             }
             context.irLinker.getFileOf(originalFunction)
+        }
+        if (file?.fileEntry?.name?.contains("str.kt") == true){
+            val hah = "abc"
         }
         val scope = if (file != null && file.fileEntry != fileEntry()) {
             FileScope(file, file.fileEntry)
@@ -1337,6 +1356,12 @@ internal class CodeGeneratorVisitor(
 
     private fun evaluateGetValue(value: IrGetValue, resultSlot: LLVMValueRef?): LLVMValueRef {
         context.log{"evaluateGetValue               : ${ir2string(value)}"}
+        println("evaluateGetValue                   : ${ir2string(value)}")
+        if ("${ir2string(value)}".contains("namek")) {
+            // This is a local variable or a parameter.
+            val a = "abc"
+        }
+        println("evaluateGetValue owner             : ${ir2string(value.symbol.owner)}")
         return currentCodeContext.genGetValue(value.symbol.owner, resultSlot)
     }
 
@@ -1350,7 +1375,10 @@ internal class CodeGeneratorVisitor(
          * while removing this slot is dangerous, as it needs to be accurate with setting variable inside expression.
          * So optimization was not implemented here for now.
          */
+        // println("evaluateSetValue: ${ir2string(value)}")
         val result = evaluateExpression(value.value)
+        println(value.symbol.toString())
+        println(value.symbol.owner.symbol.toString())
         val variable = currentCodeContext.getDeclaredValue(value.symbol.owner)
         functionGenerationContext.vars.store(result, variable)
         assert(value.type.isUnit())
@@ -1674,6 +1702,11 @@ internal class CodeGeneratorVisitor(
 
     private fun evaluateGetField(value: IrGetField, resultSlot: LLVMValueRef?): LLVMValueRef {
         context.log { "evaluateGetField               : ${ir2string(value)}" }
+        println("evaluateGetField               : ${ir2string(value)}")
+        if (ir2string(value).contains("namek")) {
+            // This is a local variable or a parameter.
+            val a = "abc"
+        }
         val alignment : Int
         val order = when {
             value.symbol.owner.hasAnnotation(KonanFqNames.volatile) ->
@@ -1696,15 +1729,43 @@ internal class CodeGeneratorVisitor(
                 alignment = generationState.llvmDeclarations.forStaticField(value.symbol.owner).alignment
             }
         }
-        return functionGenerationContext.loadSlot(
-                value.type.toLLVMType(llvm),
-                value.type.binaryTypeIsReference(),
-                fieldAddress,
-                !value.symbol.owner.isFinal,
-                resultSlot,
-                memoryOrder = order,
-                alignment = alignment
-        )
+        if (value.symbol.owner is IrFieldImpl) {
+            val irFieldImpl = value.symbol.owner as IrFieldImpl
+            if (irFieldImpl.isPointerCompressed) {
+                // If the field is pointer compressed, we need to load it as a pointer.
+                val load = functionGenerationContext.loadSlot(
+                        llvm.int32Type,
+                        false,
+                        fieldAddress,
+                        !value.symbol.owner.isFinal,
+                        resultSlot,
+                        memoryOrder = order,
+                        alignment = 4
+                )
+                return functionGenerationContext.intToPtr(load, llvm.kObjHeaderPtr)
+            } else {
+                return functionGenerationContext.loadSlot(
+                        value.type.toLLVMType(llvm),
+                        value.type.binaryTypeIsReference(),
+                        fieldAddress,
+                        !value.symbol.owner.isFinal,
+                        resultSlot,
+                        memoryOrder = order,
+                        alignment = alignment
+                )
+            }
+
+        } else {
+            return functionGenerationContext.loadSlot(
+                    value.type.toLLVMType(llvm),
+                    value.type.binaryTypeIsReference(),
+                    fieldAddress,
+                    !value.symbol.owner.isFinal,
+                    resultSlot,
+                    memoryOrder = order,
+                    alignment = alignment
+            )
+        }
     }
 
     //-------------------------------------------------------------------------//
@@ -1735,9 +1796,13 @@ internal class CodeGeneratorVisitor(
             // See https://youtrack.jetbrains.com/issue/KT-39100 for details.
             return codegen.theUnitInstanceRef.llvm
         }
-
+        println("evaluateSetField: ${ir2string(value)}")
+        if (ir2string(value).contains("namek")) {
+            val h = "ha"
+        }
         val thisPtr = value.receiver?.let { evaluateExpression(it) }
         val valueToAssign = evaluateExpression(value.value)
+        // thisPtr是abc所在的地址
         val address: LLVMValueRef
         val alignment: Int
         if (thisPtr != null) {
@@ -1749,13 +1814,29 @@ internal class CodeGeneratorVisitor(
             alignment = generationState.llvmDeclarations.forField(value.symbol.owner).alignment
         } else {
             require(value.symbol.owner.isStatic) { "A receiver expected for a non-static field: ${value.render()}" }
+            println(value.symbol.owner.name.toString())
             address = staticFieldPtr(value.symbol.owner, functionGenerationContext)
             alignment = generationState.llvmDeclarations.forStaticField(value.symbol.owner).alignment
         }
+        val isPtrCmp = if (value.symbol.owner is IrFieldImpl) {
+            val irFieldImpl = value.symbol.owner as IrFieldImpl
+            irFieldImpl.isPointerCompressed
+        } else {
+            false
+        }
+        val valueToAssign64or32 = if (isPtrCmp) {
+            // If the field is pointer compressed, we need to store it as a pointer.
+            // Otherwise, we store it as a 64-bit or 32-bit value.
+            functionGenerationContext.ptrToInt(valueToAssign, llvm.int32Type)
+            // functionGenerationContext.bitcast(llvm.int32Type, valueToAssign)
+        } else {
+            valueToAssign
+        }
         functionGenerationContext.storeAny(
-                valueToAssign, address, value.symbol.owner.type.binaryTypeIsReference(), false,
+                valueToAssign64or32, address, value.symbol.owner.type.binaryTypeIsReference(), false,
                 isVolatile = value.symbol.owner.hasAnnotation(KonanFqNames.volatile),
                 alignment = alignment,
+                isPointerCompressed = isPtrCmp,
         )
 
         assert (value.type.isUnit())
@@ -1764,9 +1845,14 @@ internal class CodeGeneratorVisitor(
 
     //-------------------------------------------------------------------------//
     private fun fieldPtrOfClass(thisPtr: LLVMValueRef, value: IrField): LLVMValueRef {
+        if (ir2string(value).contains("namek")) {
+            // Static field, no need to access class body.
+            val a = "haha"
+        }
         val fieldInfo = generationState.llvmDeclarations.forField(value)
         val classBodyType = fieldInfo.classBodyType
         val typedBodyPtr = functionGenerationContext.bitcast(pointerType(classBodyType), thisPtr)
+
         val fieldPtr = LLVMBuildStructGEP2(functionGenerationContext.builder, classBodyType, typedBodyPtr, fieldInfo.index, "")
         return fieldPtr!!
     }

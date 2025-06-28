@@ -634,3 +634,4 @@ private const val TF_HAS_FINALIZER = 64
 private const val TF_HAS_FREEZE_HOOK = 128
 private const val TF_REFLECTION_SHOW_PKG_NAME = 256
 private const val TF_REFLECTION_SHOW_REL_NAME = 512
+private const val TF_IS_POINTER_COMPRESSED = 1024
