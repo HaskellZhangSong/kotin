@@ -50,7 +50,8 @@ enum Konan_TypeFlags {
   TF_SUSPEND_FUNCTION = 1 << 5,
   TF_HAS_FINALIZER = 1 << 6,
   TF_REFLECTION_SHOW_PKG_NAME = 1 << 8, // If package name is available in reflection, e.g. in `KClass.qualifiedName`.
-  TF_REFLECTION_SHOW_REL_NAME = 1 << 9 // If relative name is available in reflection, e.g. in `KClass.simpleName`.
+  TF_REFLECTION_SHOW_REL_NAME = 1 << 9, // If relative name is available in reflection, e.g. in `KClass.simpleName`.
+  TF_IS_POINTER_COMPRESSED = 1 << 10 // If the type is pointer compressed.
 };
 
 // Extended information about a type.

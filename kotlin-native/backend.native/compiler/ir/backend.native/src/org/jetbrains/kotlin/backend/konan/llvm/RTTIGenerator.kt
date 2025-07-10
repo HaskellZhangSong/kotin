@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.objcinterop.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.NativeRuntimeNames
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
 
 internal class RTTIGenerator(
         override val generationState: NativeGenerationState,
@@ -71,6 +72,10 @@ internal class RTTIGenerator(
 
         if (irClass.hasAnnotation(NativeRuntimeNames.Annotations.HasFinalizer)) {
             result = result or TF_HAS_FINALIZER
+        }
+
+        if (irClass is IrClassImpl && irClass.isPointerCompressed) {
+            result = result or TF_IS_POINTER_COMPRESSED
         }
 
         return result
