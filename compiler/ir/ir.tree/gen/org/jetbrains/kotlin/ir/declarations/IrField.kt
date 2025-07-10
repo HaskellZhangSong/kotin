@@ -32,6 +32,8 @@ abstract class IrField : IrDeclarationBase(), IrPossiblyExternalDeclaration, IrD
 
     abstract var isStatic: Boolean
 
+    abstract var isPointerCompressed: Boolean
+
     abstract var initializer: IrExpressionBody?
 
     abstract var correspondingPropertySymbol: IrPropertySymbol?

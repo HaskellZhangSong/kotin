@@ -75,6 +75,7 @@ object ImplementationConfigurator : AbstractIrTreeImplementationConfigurator() {
 
         impl(field) {
             defaultNull("initializer", "correspondingPropertySymbol")
+            defaultFalse("isPointerCompressed")
         }
 
         allImplOf(property) {
@@ -112,7 +113,7 @@ object ImplementationConfigurator : AbstractIrTreeImplementationConfigurator() {
         impl(`class`) {
             defaultNull("thisReceiver", "valueClassRepresentation")
             defaultEmptyList("superTypes", "sealedSubclasses")
-            defaultFalse("isExternal", "isCompanion", "isInner", "isData", "isValue", "isExpect", "isFun", "hasEnumEntries")
+            defaultFalse("isExternal", "isCompanion", "isInner", "isData", "isValue", "isExpect", "isFun", "hasEnumEntries", "isPointerCompressed")
         }
 
         impl(enumEntry) {

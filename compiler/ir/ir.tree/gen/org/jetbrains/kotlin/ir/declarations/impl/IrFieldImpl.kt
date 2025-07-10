@@ -37,7 +37,6 @@ class IrFieldImpl @IrImplementationDetail constructor(
     override var type: IrType,
     override var isFinal: Boolean,
     override var isStatic: Boolean,
-    public var isPointerCompressed: Boolean = false,
 ) : IrField() {
     override var annotations: List<IrConstructorCall> = emptyList()
 
@@ -47,14 +46,13 @@ class IrFieldImpl @IrImplementationDetail constructor(
     override val descriptor: PropertyDescriptor
         get() = symbol.descriptor
 
+    override var isPointerCompressed: Boolean = false
+
     override var initializer: IrExpressionBody? = null
 
     override var correspondingPropertySymbol: IrPropertySymbol? = null
 
     init {
-        if (name.toString() == "namek") {
-            val h = "haa"
-        }
         symbol.bind(this)
     }
 }

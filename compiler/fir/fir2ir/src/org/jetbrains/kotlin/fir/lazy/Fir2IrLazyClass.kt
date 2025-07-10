@@ -47,6 +47,7 @@ class Fir2IrLazyClass(
     override val fir: FirRegularClass,
     override val symbol: IrClassSymbol,
     parent: IrDeclarationParent,
+    override var isPointerCompressed: Boolean = false
 ) : IrClass(), AbstractFir2IrLazyDeclaration<FirRegularClass>, Fir2IrTypeParametersContainer,
     IrMaybeDeserializedClass, Fir2IrComponents by c {
     init {

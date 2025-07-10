@@ -37,8 +37,6 @@ class IrClassImpl @IrImplementationDetail constructor(
 
     override var isExternal: Boolean = false
 
-    var isPointerCompressed: Boolean = false
-
     override var typeParameters: List<IrTypeParameter> = emptyList()
 
     @UnsafeDuringIrConstructionAPI
@@ -68,6 +66,8 @@ class IrClassImpl @IrImplementationDetail constructor(
 
     override var hasEnumEntries: Boolean = false
 
+    override var isPointerCompressed: Boolean = false
+
     override var superTypes: List<IrType> = emptyList()
 
     override var thisReceiver: IrValueParameter? = null
@@ -77,10 +77,6 @@ class IrClassImpl @IrImplementationDetail constructor(
     override var sealedSubclasses: List<IrClassSymbol> = emptyList()
 
     init {
-        // initialize isPointerCompressed here, read the table and set compressed pointer
-        if (name.asString() == "Person") {
-            isPointerCompressed = true
-        }
         symbol.bind(this)
     }
 }

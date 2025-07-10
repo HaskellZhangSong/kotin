@@ -283,7 +283,9 @@ object IrTree : AbstractTreeBuilder() {
         +field("isValue", boolean)
         +field("isExpect", boolean)
         +field("isFun", boolean)
-        +field("hasEnumEntries", boolean) {
+        +field("hasEnumEntries", boolean)
+        +field("isPointerCompressed", boolean)
+        {
             kDoc = """
             Returns true iff this is a class loaded from dependencies which has the `HAS_ENUM_ENTRIES` metadata flag set.
             This flag is useful for Kotlin/JVM to determine whether an enum class from dependency actually has the `entries` property
@@ -449,6 +451,7 @@ object IrTree : AbstractTreeBuilder() {
         +field("type", irTypeType)
         +field("isFinal", boolean)
         +field("isStatic", boolean)
+        +field("isPointerCompressed", boolean, mutable = true)
         +field("initializer", expressionBody, nullable = true)
         +referencedSymbol("correspondingPropertySymbol", propertySymbol, nullable = true)
     }

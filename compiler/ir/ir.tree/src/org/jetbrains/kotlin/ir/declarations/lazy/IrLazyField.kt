@@ -33,6 +33,7 @@ class IrLazyField(
     override var isStatic: Boolean,
     override val stubGenerator: DeclarationStubGenerator,
     override val typeTranslator: TypeTranslator,
+    override var isPointerCompressed: Boolean = false,
 ) : IrField(), IrLazyDeclarationBase {
     init {
         symbol.bind(this)

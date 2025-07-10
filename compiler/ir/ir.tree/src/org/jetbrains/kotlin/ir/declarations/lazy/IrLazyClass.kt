@@ -41,6 +41,7 @@ class IrLazyClass(
     override var hasEnumEntries: Boolean,
     override val stubGenerator: DeclarationStubGenerator,
     override val typeTranslator: TypeTranslator,
+    override var isPointerCompressed: Boolean = false,
 ) : IrClass(), IrLazyDeclarationBase {
     init {
         symbol.bind(this)
