@@ -890,7 +890,7 @@ internal abstract class FunctionGenerationContext(
             call(llvm.allocInstanceFunction, listOf(typeInfo), lifetime, resultSlot = resultSlot)
 
     fun allocInstance(irClass: IrClass, lifetime: Lifetime, resultSlot: LLVMValueRef?) =
-        if (lifetime == Lifetime.STACK)
+        if (lifetime == Lifetime.STACK && !irClass.isPointerCompressed)
             stackLocalsManager.alloc(irClass)
         else
             allocInstance(codegen.typeInfoForAllocation(irClass), lifetime, resultSlot)
@@ -903,7 +903,7 @@ internal abstract class FunctionGenerationContext(
         resultSlot: LLVMValueRef? = null
     ): LLVMValueRef {
         val typeInfo = codegen.typeInfoValue(irClass)
-        return if (lifetime == Lifetime.STACK) {
+        return if (lifetime == Lifetime.STACK && !irClass.isPointerCompressed) {
             stackLocalsManager.allocArray(irClass, count)
         } else {
             call(llvm.allocArrayFunction, listOf(typeInfo, count), lifetime, exceptionHandler, resultSlot = resultSlot)
