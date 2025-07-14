@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.ir.PointerCompressClassList
 
 class IrClassImpl @IrImplementationDetail constructor(
     override val startOffset: Int,
@@ -77,6 +78,10 @@ class IrClassImpl @IrImplementationDetail constructor(
     override var sealedSubclasses: List<IrClassSymbol> = emptyList()
 
     init {
+        // need to recursive traverse the types
+        if (PointerCompressClassList.pointerCompressedClasses.contains(this.name.asString())) {
+            isPointerCompressed = true
+        }
         symbol.bind(this)
     }
 }
