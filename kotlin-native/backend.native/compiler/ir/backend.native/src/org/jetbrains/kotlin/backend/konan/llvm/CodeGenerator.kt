@@ -757,7 +757,7 @@ internal abstract class FunctionGenerationContext(
     private fun updateRef(value: LLVMValueRef, address: LLVMValueRef, onStack: Boolean,
                           isVolatile: Boolean = false, alignment: Int? = null,
                           isPointerCompressed: Boolean = false) {
-        require(alignment == null || alignment % runtime.pointerAlignment == 0)
+        require(alignment == null || alignment % runtime.pointerAlignment == 0 || alignment % runtime.pointerAlignment == 4)
         if (onStack) {
             require(!isVolatile) { "Stack ref update can't be volatile"}
             call(llvm.updateStackRefFunction, listOf(address, value))
