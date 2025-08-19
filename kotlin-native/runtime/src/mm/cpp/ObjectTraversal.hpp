@@ -11,6 +11,7 @@
 #include "Memory.h"
 #include "Natives.h"
 #include "ReferenceOps.hpp"
+#include "ReferenceOps32.hpp"
 #include "Types.h"
 #include "ObjectOps.hpp"
 
@@ -19,12 +20,21 @@ namespace kotlin {
 // TODO: Consider an iterator/ranges based approaches for traversals.
 
 template <typename F>
-PERFORMANCE_INLINE void traverseClassObjectFields(ObjHeader* object, F process) noexcept(noexcept(process(std::declval<mm::RefFieldAccessor>()))) {
+PERFORMANCE_INLINE void traverseClassObjectFields(ObjHeader* object, F process) noexcept(noexcept(process(std::declval<mm::RefFieldAccessor>())) && 
+             noexcept(process(std::declval<mm::RefFieldAccessor32>()))) {
     const TypeInfo* typeInfo = object->type_info();
+    bool isPtrCmp = typeInfo->isPointerCompressed();
     RuntimeAssert(typeInfo != theArrayTypeInfo, "Must not be an array of objects");
-    for (int index = 0; index < typeInfo->objOffsetsCount_; index++) {
-        auto fieldPtr = reinterpret_cast<ObjHeader**>(reinterpret_cast<uintptr_t>(object) + typeInfo->objOffsets_[index]);
-        process(mm::RefFieldAccessor(fieldPtr));
+    if (isPtrCmp) {
+        for (int index = 0; index < typeInfo->objOffsetsCount_; index++) {
+            auto fieldPtr = reinterpret_cast<Ptr32*>(reinterpret_cast<uintptr_t>(object) + typeInfo->objOffsets_[index]);
+            process(mm::RefFieldAccessor32(fieldPtr));
+        }
+    } else {
+        for (int index = 0; index < typeInfo->objOffsetsCount_; index++) {
+            auto fieldPtr = reinterpret_cast<ObjHeader**>(reinterpret_cast<uintptr_t>(object) + typeInfo->objOffsets_[index]);
+            process(mm::RefFieldAccessor(fieldPtr));
+        }
     }
 }
 

@@ -1,4 +1,11 @@
-#ifdef KONAN_OHOS
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__64BIT__) || defined(__LP64__) || defined(_WIN64)
+    #define IS_64BIT_ARCH 1
+#else
+    #define IS_64BIT_ARCH 0
+#endif
+
+
+#if (KONAN_OHOS || KONAN_LINUX) && IS_64BIT_ARCH
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -40,6 +47,13 @@ private:
     std::set<Ptr32_t> freeBlockSmallSize; // less than 256KB
     std::set<Ptr32_t> freeBlock256KB;
     std::set<Ptr32_t> freeBlockLargeSize; // more than 256KB
+    Ptr32_t TryReuseBlock(Size32_t alignedSize);
+    Ptr32_t AllocateNewBlock(Size32_t alignedSize);
+    void AddToFreeList(Ptr32_t ptr, Size32_t size);
+    void RemoveFromFreeList(Ptr32_t ptr, Size32_t size);
+    bool IsBlockFree(Ptr32_t ptr, Size32_t size);
+    void SplitBlock(Ptr32_t ptr, Size32_t usedSize, Size32_t totalSize);
+
 
 public:
     MmapAllocator(uintptr_t heapBase);

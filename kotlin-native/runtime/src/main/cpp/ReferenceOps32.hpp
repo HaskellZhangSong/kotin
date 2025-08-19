@@ -47,6 +47,10 @@ public:
     Ptr32* location() const noexcept { return &ref_; }
     // conversion function
     PERFORMANCE_INLINE operator Ptr32() const noexcept { return load(); }
+    PERFORMANCE_INLINE operator ObjHeader*() const noexcept { 
+        Ptr32 value = load();
+        return (ObjHeader*)(0L | value);
+    }
     PERFORMANCE_INLINE Ptr32 operator=(Ptr32 desired) noexcept { store(desired); return desired; }
 
     PERFORMANCE_INLINE Ptr32 load() const noexcept {
@@ -109,6 +113,7 @@ public:
 
     explicit RefAccessor32(Ptr32& fieldRef) noexcept : direct_(fieldRef) {}
     explicit RefAccessor32(Ptr32* fieldPtr) noexcept : RefAccessor32(*fieldPtr) {}
+    explicit RefAccessor32(ObjHeader** fieldPtr) noexcept : direct_(*reinterpret_cast<Ptr32*>(fieldPtr)) {}
     RefAccessor32(const RefAccessor32& other) noexcept : direct_(other.direct_) {}
 
     DirectRefAccessor32 direct() const noexcept { return direct_; }

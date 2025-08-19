@@ -1,118 +1,86 @@
-#ifdef KONAN_OHOS
+#if defined KONAN_OHOS || defined KONAN_LINUX
 #include <MmapAllocator.hpp>
 #include "Porting.h"
 #include <sys/mman.h>
 #include <KAssert.h>
 #include <errno.h>
 #include <string.h>
-
-MmapAllocator::MmapAllocator(uintptr_t heapBase) : heapBase(heapBase), heapEnd(heapBase) {
-
-}
+#include <algorithm>
+#include <limits.h>
+MmapAllocator::MmapAllocator(uintptr_t heapBase) : heapBase(heapBase), heapEnd(heapBase) {}
 
 Ptr32_t MmapAllocator::Allocate(Size32_t size) {
-    // This lock is too heavy and need to be optimized
-    // also this lock makes atomic headEnd useless
     std::lock_guard<std::mutex> lock(mutex);
-    if (size == 64 * KB) {
-        auto it = freeBlockSmallSize.begin();
-        if (it != freeBlockSmallSize.end()) {
-            Ptr32_t ptr = *it;
-            freeBlockSmallSize.erase(it);
-            return MmapAllocator::ToPtr32(reinterpret_cast<void*>(ptr));
-        }
-    } else if (size == 256 * KB) {
-        if (!freeBlock256KB.empty()) {
-            Ptr32_t ptr = *freeBlock256KB.begin();
-            freeBlock256KB.erase(freeBlock256KB.begin());
-            return MmapAllocator::ToPtr32(reinterpret_cast<void*>(ptr));
-        }
-    } else {
-        Size32_t sizeInVec;
-        // Linear search for free blocks that are larger than 256KB size
-        for(auto it = freeBlockLargeSize.begin(); it != freeBlockLargeSize.end(); ++it) {
-            sizeInVec = allocatedBlocks[*it];
-            if (sizeInVec >= size) {
-                Ptr32_t ptr = *it;
-                freeBlockLargeSize.erase(it);
-                return MmapAllocator::ToPtr32(reinterpret_cast<void*>(ptr));
-            }
-        }
+
+    // Align size to page boundary (4KB)
+    Size32_t alignedSize = (size + 0xFFF) & ~0xFFF;
+
+    // Try to reuse free blocks first
+    Ptr32_t reusedPtr = TryReuseBlock(alignedSize);
+    if (reusedPtr != PTR32_NULL) {
+        return reusedPtr;
     }
-#ifdef KONAN_WINDOWS
-    RuntimeFail("mmap is not available on mingw");
-#elif KONAN_LINUX
-    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE;
-#else
-    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
-#endif
-    // If there is no free blocks in llocate new memory
-    void* ptr = mmap(reinterpret_cast<void*>(heapEnd.load()), size, PROT_READ | PROT_WRITE, flags, -1, 0);
-    if (ptr == MAP_FAILED) {
-        konan::consoleErrorf("Allocate at %p mmap failed: %s\n", ToPtr(heapEnd.load()), strerror(errno));
-        std::abort();
-        return PTR32_NULL; // Non-reachable.
-    }
-    konan::consolePrintf("[INFO] Allocate at: %p with size: %d\n", ptr, size);
-    heapEnd.fetch_add(size);
-    allocatedBlocks[reinterpret_cast<Ptr32_t>(ptr)] = size;
-    return ToPtr32(ptr);
+
+    // Allocate new memory if no suitable free block found
+    return AllocateNewBlock(alignedSize);
 }
 
 void MmapAllocator::Deallocate(void* ptr) {
+    if (!ptr) return;
+
     std::lock_guard<std::mutex> lock(mutex);
     Ptr32_t ptr32 = ToPtr32(ptr);
+
     auto it = allocatedBlocks.find(ptr32);
-    if (it != allocatedBlocks.end()) {
-        Size32_t size = it->second;
-        if (size < 256 * KB) {
-            freeBlockSmallSize.insert(ptr32);
-        } else if (size == 256 * KB) {
-            freeBlock256KB.insert(ptr32);
-        } else {
-            freeBlockLargeSize.insert(ptr32);
-        }
-    } else {
+    if (it == allocatedBlocks.end()) {
         konan::consoleErrorf("Deallocate at %p not found in allocated blocks\n", ptr);
         std::abort();
     }
+
+    Size32_t size = it->second;
+    AddToFreeList(ptr32, size);
 }
 
-/*
- * This will decrease the heapEnd when the last block is free but not allocated.
- * If the last block is not free, it will not change the heapEnd.
- * TODO: There should be a for loop to withdraw all unused blocks at the end.
- */
 void MmapAllocator::Withdraw() {
     std::lock_guard<std::mutex> lock(mutex);
+
     if (allocatedBlocks.empty()) {
-        RuntimeAssert(heapEnd.load() == heapBase, "allocatedBlocks is empty but heapEnd is not equal to heapBase");
+        RuntimeAssert(heapEnd.load() == heapBase,
+                     "allocatedBlocks is empty but heapEnd is not equal to heapBase");
         return;
     }
-    for (auto it = allocatedBlocks.rbegin(); it != allocatedBlocks.rend(); ) {
-        auto blockPtr = it->first;
-        auto blockSize = it->second;
 
-        if (blockSize == 64 * KB && freeBlockSmallSize.find(blockPtr) != freeBlockSmallSize.end()) {
-            freeBlockSmallSize.erase(blockPtr);
-            munmap(reinterpret_cast<void*>(blockPtr), blockSize);
-            heapEnd.fetch_sub(blockSize);
-            it = decltype(it)(allocatedBlocks.erase(std::next(it).base()));
-            konan::consolePrintf("[INFO] Free small block at: %p with size: %d\n", ToPtr(blockPtr), blockSize);
-        } else if (blockSize == 256 * KB && freeBlock256KB.find(blockPtr) != freeBlock256KB.end()) {
-            freeBlock256KB.erase(blockPtr);
-            munmap(reinterpret_cast<void*>(blockPtr), blockSize);
-            heapEnd.fetch_sub(blockSize);
-            it = decltype(it)(allocatedBlocks.erase(std::next(it).base()));
-            konan::consolePrintf("[INFO] Free small block at: %p with size: %d\n", ToPtr(blockPtr), blockSize);
-        } else if (blockSize > 256 * KB && freeBlockLargeSize.find(blockPtr) != freeBlockLargeSize.end()) {
-            freeBlockLargeSize.erase(blockPtr);
-            munmap(reinterpret_cast<void*>(blockPtr), blockSize);
-            heapEnd.fetch_sub(blockSize);
-            it = decltype(it)(allocatedBlocks.erase(std::next(it).base()));
-            konan::consolePrintf("[INFO] Free small block at: %p with size: %d\n", ToPtr(blockPtr), blockSize);
-        } else {
-            break;
+    // Process blocks from the end of heap backwards
+    bool foundFreeBlock = true;
+    while (foundFreeBlock && !allocatedBlocks.empty()) {
+        foundFreeBlock = false;
+
+        // Find the highest address block
+        auto lastBlock = std::max_element(allocatedBlocks.begin(), allocatedBlocks.end(),
+            [](const auto& a, const auto& b) { return a.first < b.first; });
+
+        if (lastBlock != allocatedBlocks.end()) {
+            Ptr32_t blockPtr = lastBlock->first;
+            Size32_t blockSize = lastBlock->second;
+
+            // Check if this block is free
+            if (IsBlockFree(blockPtr, blockSize)) {
+                // Remove from free lists
+                RemoveFromFreeList(blockPtr, blockSize);
+
+                // Unmap the memory
+                if (munmap(ToPtr(blockPtr), blockSize) == 0) {
+                    heapEnd.fetch_sub(blockSize);
+                    allocatedBlocks.erase(lastBlock);
+                    foundFreeBlock = true;
+
+                    konan::consolePrintf("[INFO] Withdrew block at: %p with size: %d\n",
+                                       ToPtr(blockPtr), blockSize);
+                } else {
+                    konan::consoleErrorf("Failed to unmap block at %p: %s\n",
+                                       ToPtr(blockPtr), strerror(errno));
+                }
+            }
         }
     }
 }
@@ -124,4 +92,126 @@ uintptr_t MmapAllocator::GetHeapBase() {
 Ptr32_t MmapAllocator::GetHeapEnd() {
     return heapEnd.load();
 }
-#endif // KONAN_OHOS
+
+// Private helper methods
+Ptr32_t MmapAllocator::TryReuseBlock(Size32_t alignedSize) {
+    // Try exact size matches first
+    if (alignedSize == 64 * KB && !freeBlockSmallSize.empty()) {
+        auto it = freeBlockSmallSize.begin();
+        Ptr32_t ptr = *it;
+        freeBlockSmallSize.erase(it);
+        return ptr;
+    }
+
+    if (alignedSize == 256 * KB && !freeBlock256KB.empty()) {
+        auto it = freeBlock256KB.begin();
+        Ptr32_t ptr = *it;
+        freeBlock256KB.erase(it);
+        return ptr;
+    }
+
+    // For other sizes, find best fit from large blocks
+    auto bestFit = freeBlockLargeSize.end();
+    Size32_t bestSize = UINT_MAX;
+
+    for (auto it = freeBlockLargeSize.begin(); it != freeBlockLargeSize.end(); ++it) {
+        auto sizeIt = allocatedBlocks.find(*it);
+        if (sizeIt != allocatedBlocks.end()) {
+            Size32_t blockSize = sizeIt->second;
+            if (blockSize >= alignedSize && blockSize < bestSize) {
+                bestFit = it;
+                bestSize = blockSize;
+            }
+        }
+    }
+
+    if (bestFit != freeBlockLargeSize.end()) {
+        Ptr32_t ptr = *bestFit;
+        freeBlockLargeSize.erase(bestFit);
+
+        // If block is much larger, consider splitting (simple heuristic)
+        if (bestSize > alignedSize * 2 && bestSize > 256 * KB) {
+            SplitBlock(ptr, alignedSize, bestSize);
+        }
+
+        return ptr;
+    }
+
+    return PTR32_NULL;
+}
+
+Ptr32_t MmapAllocator::AllocateNewBlock(Size32_t alignedSize) {
+#ifdef KONAN_WINDOWS
+    RuntimeFail("mmap is not available on mingw");
+#elif KONAN_LINUX
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED | MAP_POPULATE;
+#else
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+#endif
+
+    void* ptr = mmap(ToPtr(heapEnd.load()), alignedSize,
+                     PROT_READ | PROT_WRITE, flags, -1, 0);
+
+    if (ptr == MAP_FAILED) {
+        konan::consoleErrorf("Allocate at %p mmap failed: %s\n",
+                           ToPtr(heapEnd.load()), strerror(errno));
+        std::abort();
+    }
+
+    Ptr32_t ptr32 = ToPtr32(ptr);
+    heapEnd.fetch_add(alignedSize);
+    allocatedBlocks[ptr32] = alignedSize;
+
+    konan::consolePrintf("[INFO] Allocated new block at: %p with size: %d\n",
+                        ptr, alignedSize);
+
+    return ptr32;
+}
+
+void MmapAllocator::AddToFreeList(Ptr32_t ptr, Size32_t size) {
+    if (size == 64 * KB) {
+        freeBlockSmallSize.insert(ptr);
+    } else if (size == 256 * KB) {
+        freeBlock256KB.insert(ptr);
+    } else {
+        freeBlockLargeSize.insert(ptr);
+    }
+}
+
+void MmapAllocator::RemoveFromFreeList(Ptr32_t ptr, Size32_t size) {
+    if (size == 64 * KB) {
+        freeBlockSmallSize.erase(ptr);
+    } else if (size == 256 * KB) {
+        freeBlock256KB.erase(ptr);
+    } else {
+        freeBlockLargeSize.erase(ptr);
+    }
+}
+
+bool MmapAllocator::IsBlockFree(Ptr32_t ptr, Size32_t size) {
+    if (size == 64 * KB) {
+        return freeBlockSmallSize.find(ptr) != freeBlockSmallSize.end();
+    } else if (size == 256 * KB) {
+        return freeBlock256KB.find(ptr) != freeBlock256KB.end();
+    } else {
+        return freeBlockLargeSize.find(ptr) != freeBlockLargeSize.end();
+    }
+}
+
+void MmapAllocator::SplitBlock(Ptr32_t ptr, Size32_t usedSize, Size32_t totalSize) {
+    // Create a new block for the remaining space
+    Ptr32_t remainingPtr = ptr + usedSize;
+    Size32_t remainingSize = totalSize - usedSize;
+
+    // Update the original block size
+    allocatedBlocks[ptr] = usedSize;
+
+    // Add the remaining part as a new free block
+    allocatedBlocks[remainingPtr] = remainingSize;
+    AddToFreeList(remainingPtr, remainingSize);
+
+    konan::consolePrintf("[INFO] Split block: used %d bytes at %p, remaining %d bytes at %p\n",
+                        usedSize, ToPtr(ptr), remainingSize, ToPtr(remainingPtr));
+}
+
+#endif // KONAN_OHOS || KONAN_LINUX

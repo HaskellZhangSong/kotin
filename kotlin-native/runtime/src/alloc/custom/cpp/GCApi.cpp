@@ -25,14 +25,14 @@
 #include "KAssert.h"
 #include "Memory.h"
 
-#ifdef KONAN_OHOS
+#if defined KONAN_OHOS || defined KONAN_LINUX
 #include "MmapAllocator.hpp"
 #endif
 
 namespace {
 // TODO this is not needed for pointer compression, since we can get it with heapEnd - heapBase
 std::atomic<size_t> allocatedBytesCounter;
-#ifdef KONAN_OHOS // for ohos we compress pointer
+#if defined KONAN_OHOS || defined KONAN_LINUX // for ohos we compress pointer
 uintptr_t heapBase = 256 * MB;
 MmapAllocator mmapAllocator{heapBase};
 #endif
@@ -98,7 +98,7 @@ bool SweepExtraObject(mm::ExtraObjectData* extraObject, gc::GCHandle::GCSweepExt
     return true;
 }
 
-#ifdef KONAN_OHOS
+#if defined KONAN_OHOS || defined KONAN_LINUX
 void* SafeAlloc(uint64_t size) noexcept {
     if (size > maxHeapSize) {
         konan::consoleErrorf("Out of memory trying to allocate %" PRIu64 "bytes. Aborting.\n", size);
@@ -127,15 +127,15 @@ void* SafeAlloc(uint64_t size) noexcept {
         memory = calloc(size, 1);
         error = memory == nullptr;
     } else {
-#if KONAN_WINDOWS
-        RuntimeFail("mmap is not available on mingw");
-#elif KONAN_LINUX
-        memory = mmap(nullptr, size, PROT_WRITE | PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NORESERVE | MAP_POPULATE, -1, 0);
-        error = memory == MAP_FAILED;
-#else
+//#if KONAN_WINDOWS
+//        RuntimeFail("mmap is not available on mingw");
+//#elif KONAN_LINUX
+//        memory = mmap(nullptr, size, PROT_WRITE | PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NORESERVE | MAP_POPULATE, -1, 0);
+//        error = memory == MAP_FAILED;
+//#else
         memory = mmap(nullptr, size, PROT_WRITE | PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NORESERVE, -1, 0);
         error = memory == MAP_FAILED;
-#endif
+//#endif
     }
     if (error) {
         konan::consoleErrorf("Out of memory trying to allocate %" PRIu64 "bytes: %s. Aborting.\n", size, strerror(errno));
@@ -147,7 +147,7 @@ void* SafeAlloc(uint64_t size) noexcept {
 }
 #endif
 
-#ifdef KONAN_OHOS
+#if defined KONAN_OHOS || defined KONAN_LINUX
 void Free(void* ptr, size_t size) noexcept {
     CustomAllocDebug("Free(%p, %zu)", ptr, size);
     if (compiler::disableMmap()) {

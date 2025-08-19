@@ -137,6 +137,10 @@ ALWAYS_INLINE inline bool isNullOrMarker(const ObjHeader* obj) noexcept {
     return reinterpret_cast<uintptr_t>(obj) <= 1;
 }
 
+inline bool isPointerCompressed(ArrayHeader* header) {
+    return header->typeInfoOrMeta_->flags_ && TF_IS_POINTER_COMPRESSED != 0;
+}
+
 struct FrameOverlay;
 
 namespace kotlin::mm {
