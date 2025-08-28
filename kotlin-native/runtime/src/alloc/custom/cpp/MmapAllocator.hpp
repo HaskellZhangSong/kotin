@@ -23,9 +23,9 @@
  *
  */
 
-#define KB (1024)
-#define MB (1024 * KB)
-#define GB (1024 * MB)
+#define KB (1024L)
+#define MB (1024L * KB)
+#define GB (1024L * MB)
 
 using Ptr32_t = uintptr_t;
 using Size32_t = uint32_t;
@@ -44,9 +44,10 @@ private:
     std::atomic<Ptr32_t> heapEnd{PTR32_NULL}; // end address of the heap
 
     std::map<Ptr32_t, Size32_t> allocatedBlocks; // map of allocated blocks, size will not be changed before withdraw
-    std::set<Ptr32_t> freeBlockSmallSize; // less than 256KB
-    std::set<Ptr32_t> freeBlock256KB;
-    std::set<Ptr32_t> freeBlockLargeSize; // more than 256KB
+    std::mutex allocatedBlocksMutex;
+    std::set<Ptr32_t> freeBlockSmallSize; // 16KB
+    std::set<Ptr32_t> freeBlock64KB;
+    std::set<Ptr32_t> freeBlockLargeSize; // more than 64KB
     Ptr32_t TryReuseBlock(Size32_t alignedSize);
     Ptr32_t AllocateNewBlock(Size32_t alignedSize);
     void AddToFreeList(Ptr32_t ptr, Size32_t size);

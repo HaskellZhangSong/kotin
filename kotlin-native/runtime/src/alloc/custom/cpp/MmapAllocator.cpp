@@ -10,40 +10,31 @@
 MmapAllocator::MmapAllocator(uintptr_t heapBase) : heapBase(heapBase), heapEnd(heapBase) {}
 
 Ptr32_t MmapAllocator::Allocate(Size32_t size) {
-    std::lock_guard<std::mutex> lock(mutex);
-
-    // Align size to page boundary (4KB)
     Size32_t alignedSize = (size + 0xFFF) & ~0xFFF;
-
     // Try to reuse free blocks first
-    Ptr32_t reusedPtr = TryReuseBlock(alignedSize);
-    if (reusedPtr != PTR32_NULL) {
-        return reusedPtr;
+    if (heapEnd.load() - heapBase >= 2 * GB) {
+        Ptr32_t reusedPtr = TryReuseBlock(alignedSize);
+        if (reusedPtr != PTR32_NULL) {
+            return reusedPtr;
+        }
     }
-
     // Allocate new memory if no suitable free block found
     return AllocateNewBlock(alignedSize);
 }
 
 void MmapAllocator::Deallocate(void* ptr) {
     if (!ptr) return;
-
-    std::lock_guard<std::mutex> lock(mutex);
     Ptr32_t ptr32 = ToPtr32(ptr);
-
     auto it = allocatedBlocks.find(ptr32);
     if (it == allocatedBlocks.end()) {
         konan::consoleErrorf("Deallocate at %p not found in allocated blocks\n", ptr);
         std::abort();
     }
-
     Size32_t size = it->second;
     AddToFreeList(ptr32, size);
 }
 
 void MmapAllocator::Withdraw() {
-    std::lock_guard<std::mutex> lock(mutex);
-
     if (allocatedBlocks.empty()) {
         RuntimeAssert(heapEnd.load() == heapBase,
                      "allocatedBlocks is empty but heapEnd is not equal to heapBase");
@@ -95,18 +86,19 @@ Ptr32_t MmapAllocator::GetHeapEnd() {
 
 // Private helper methods
 Ptr32_t MmapAllocator::TryReuseBlock(Size32_t alignedSize) {
+    std::lock_guard<std::mutex> lock(mutex);
     // Try exact size matches first
-    if (alignedSize == 64 * KB && !freeBlockSmallSize.empty()) {
+    if (alignedSize == 16 * KB && !freeBlockSmallSize.empty()) {
         auto it = freeBlockSmallSize.begin();
         Ptr32_t ptr = *it;
         freeBlockSmallSize.erase(it);
         return ptr;
     }
 
-    if (alignedSize == 256 * KB && !freeBlock256KB.empty()) {
-        auto it = freeBlock256KB.begin();
+    if (alignedSize == 64 * KB && !freeBlock64KB.empty()) {
+        auto it = freeBlock64KB.begin();
         Ptr32_t ptr = *it;
-        freeBlock256KB.erase(it);
+        freeBlock64KB.erase(it);
         return ptr;
     }
 
@@ -128,9 +120,8 @@ Ptr32_t MmapAllocator::TryReuseBlock(Size32_t alignedSize) {
     if (bestFit != freeBlockLargeSize.end()) {
         Ptr32_t ptr = *bestFit;
         freeBlockLargeSize.erase(bestFit);
-
         // If block is much larger, consider splitting (simple heuristic)
-        if (bestSize > alignedSize * 2 && bestSize > 256 * KB) {
+        if (bestSize > alignedSize * 2 && bestSize > 64 * KB) {
             SplitBlock(ptr, alignedSize, bestSize);
         }
 
@@ -148,8 +139,14 @@ Ptr32_t MmapAllocator::AllocateNewBlock(Size32_t alignedSize) {
 #else
     int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
 #endif
+    Ptr32_t old_base;
+    Ptr32_t new_base;
+    do {
+      old_base = heapEnd.load(std::memory_order_relaxed);
+      new_base = old_base + alignedSize;
+    } while (!heapEnd.compare_exchange_weak(old_base, new_base));
 
-    void* ptr = mmap(ToPtr(heapEnd.load()), alignedSize,
+    void* ptr = mmap(ToPtr(old_base), alignedSize,
                      PROT_READ | PROT_WRITE, flags, -1, 0);
 
     if (ptr == MAP_FAILED) {
@@ -160,8 +157,8 @@ Ptr32_t MmapAllocator::AllocateNewBlock(Size32_t alignedSize) {
 
     Ptr32_t ptr32 = ToPtr32(ptr);
     heapEnd.fetch_add(alignedSize);
+    std::lock_guard<std::mutex> lock(allocatedBlocksMutex);
     allocatedBlocks[ptr32] = alignedSize;
-
     konan::consolePrintf("[INFO] Allocated new block at: %p with size: %d\n",
                         ptr, alignedSize);
 
@@ -169,30 +166,30 @@ Ptr32_t MmapAllocator::AllocateNewBlock(Size32_t alignedSize) {
 }
 
 void MmapAllocator::AddToFreeList(Ptr32_t ptr, Size32_t size) {
-    if (size == 64 * KB) {
+    if (size == 16 * KB) {
         freeBlockSmallSize.insert(ptr);
-    } else if (size == 256 * KB) {
-        freeBlock256KB.insert(ptr);
+    } else if (size == 64 * KB) {
+        freeBlock64KB.insert(ptr);
     } else {
         freeBlockLargeSize.insert(ptr);
     }
 }
 
 void MmapAllocator::RemoveFromFreeList(Ptr32_t ptr, Size32_t size) {
-    if (size == 64 * KB) {
+    if (size == 16 * KB) {
         freeBlockSmallSize.erase(ptr);
-    } else if (size == 256 * KB) {
-        freeBlock256KB.erase(ptr);
+    } else if (size == 64 * KB) {
+        freeBlock64KB.erase(ptr);
     } else {
         freeBlockLargeSize.erase(ptr);
     }
 }
 
 bool MmapAllocator::IsBlockFree(Ptr32_t ptr, Size32_t size) {
-    if (size == 64 * KB) {
+    if (size == 16 * KB) {
         return freeBlockSmallSize.find(ptr) != freeBlockSmallSize.end();
-    } else if (size == 256 * KB) {
-        return freeBlock256KB.find(ptr) != freeBlock256KB.end();
+    } else if (size == 64 * KB) {
+        return freeBlock64KB.find(ptr) != freeBlock64KB.end();
     } else {
         return freeBlockLargeSize.find(ptr) != freeBlockLargeSize.end();
     }
