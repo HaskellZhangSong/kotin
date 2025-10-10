@@ -146,7 +146,7 @@ struct TypeInfo {
     inline VTableElement* vtable() { return reinterpret_cast<VTableElement*>(this + 1); }
 
     inline bool IsArray() const { return instanceSize_ < 0; }
-
+    inline bool isPointerCompressed() const { return (flags_ & TF_IS_POINTER_COMPRESSED) != 0; }
     bool IsLayoutCompatible(const TypeInfo* rhs) const noexcept {
         // TODO: Use debug info if it's present?
         // This automatically checks array vs object discrepancy.
