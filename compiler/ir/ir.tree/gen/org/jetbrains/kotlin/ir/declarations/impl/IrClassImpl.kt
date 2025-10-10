@@ -78,8 +78,8 @@ class IrClassImpl @IrImplementationDetail constructor(
     override var sealedSubclasses: List<IrClassSymbol> = emptyList()
 
     init {
-        // need to recursive traverse the types
-        if (PointerCompressClassList.pointerCompressedClasses.contains(this.name.asString())) {
+        if (PointerCompressClassList.pointerCompressedClasses.any { this.symbol.signature.toString().startsWith(it) }) {
+            println("compressed:" + this.symbol.signature.toString())
             isPointerCompressed = true
         }
         symbol.bind(this)
