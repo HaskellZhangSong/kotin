@@ -133,6 +133,8 @@ open class Command(initialCommand: List<String>, val redirectInputFile: File? = 
     }
 
     private fun log() {
+        println(command.joinToString(" "))
+        println()
         if (logger != null) logger!! { command.joinToString(" ") }
     }
 }
