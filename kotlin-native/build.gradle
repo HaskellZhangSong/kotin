@@ -650,6 +650,14 @@ compilationDatabase {
 // TODO: Replace with a more convenient user-facing task that can build for a specific target.
 //       like compilationDatabase with optional argument --target.
 tasks.register("compdb", Copy) {
+    def t = (project.findProperty("compdbTarget") ?: "").toString()
+    def srcProvider = t
+            ? compilationDatabase.targets.getByName(t).task
+            : compilationDatabase.hostTarget.task
+
+    from(srcProvider)
+    into layout.projectDirectory
+
     from compilationDatabase.hostTarget.task
     into layout.projectDirectory
 
